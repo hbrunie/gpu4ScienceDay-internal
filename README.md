@@ -1,22 +1,69 @@
-# BerkeleyGW-Kernels
+# GPU for Science Day Mini-App
 
-Mini-apps from BerkeleyGW kernels. GPP and FF
+## Project Layout
 
-Master branch - OpenMP3.0
-OpenMP4.5 branch - OpenMP 4.5 versions with xl, gcc, clang, cray
-OpenACC branch - OpenACC with pgi, cray, gcc
-CUDA branch
+- `^/GPP`
+  - `gpp.cpp`
+    - blabla...
+    - blabla...
+  - `Solutions/`
+    - all you need to win the JetBot!
+- `^/external`
+  - `arrayMD/`
+    - an array...
+  - `ComplexClass/`
+    - a complex...
 
+## Development Environment
 
-Sequential Runtime :
-./gpp.ex 512 2 32768 20
-OpenMP 3.0
-Number of OpenMP Threads = 64
-Sizeof(CustomComplex<double> = 16 bytes
-number_bands = 512       nvband = 2      ncouls = 32768  nodes_per_group  = 20   ngpown = 1638   nend = 3        nstart = 0
-Memory Foot Print = 2.10048 GBs
+```shell
+$ git clone https://github.com/to-be-fixed
+$ cd gpu4science-app/GPP
+```
 
- Final achtemp
- ( -264241151.997370, 1321205760.015211)
- ********** Kernel Time Taken **********= 220 secs
- ********** Total Time Taken **********= 225.71 secs
+## Cori GPU
+
+### Get GPU node:
+```shell
+$ module load esslurm
+$ salloc -A gpu4sci -C gpu -N 1 -t 04:00:00 -c 10 --gres=gpu:1
+```
+
+### OpenACC:
+```shell
+# setup
+$ module purge
+$ module load cuda
+$ module load pgi
+$ module load esslurm
+
+# build
+$ make COMP=pgi OPENACC=y GPU=y
+```
+
+### OpenMP:
+```shell
+# setup
+$ module purge
+$ module load esslurm
+$ module load PrgEnv-llvm/9.0.0-git_20190220
+
+# build
+$ make COMP=clang OPENMP=y OPENMP_TARGET=y GPU=y
+```
+
+### CUDA:
+```shell
+# setup
+$ module purge
+$ module load esslurm
+$ module load cuda
+
+# build
+$ make COMP=NVCC
+```
+
+### Run:
+```shell
+$ srun ./gpp.ex
+```
