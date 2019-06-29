@@ -34,10 +34,10 @@ $ salloc -A gpu4sci -C gpu -N 1 -t 04:00:00 -c 10 --gres=gpu:1
 ### Test CPU (sequential) version:
 ```shell
 $ module purge
-$ module load gcc esslurm
+$ module load intel esslurm
 
 # build
-$ make
+$ make COMP=ic
 ```
 
 ### CUDA:
