@@ -1,5 +1,6 @@
 #include "../external/ComplexClass/CustomComplex.h"
 #include "../external/arrayMD/arrayMDcpu.h"
+#include <string.h>
 
 #define nstart 0
 #define nend 3
@@ -10,15 +11,28 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
         Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer);
 
-inline void correntess(CustomComplex<dataType> result)
+inline void correntess(int problem_size, CustomComplex<dataType> result)
 {
-    dataType re_diff = result.get_real() - -264241151.997370;
-    dataType im_diff = result.get_imag() - 1321205760.015211;
+    if(problem_size == 0)
+    {
+        dataType re_diff = result.get_real() - -138754044073.245178;
+        dataType im_diff = result.get_imag() - ;
 
-    if(re_diff < 0.00001 && im_diff < 0.00001)
-        printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
+        if(re_diff < 0.00001 && im_diff < 0.00001)
+            printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
+        else
+            printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
+    }
     else
-        printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
+    {
+        dataType re_diff = result.get_real() - -8538.835662;
+        dataType im_diff = result.get_imag() - 1016121.443761;
+
+        if(re_diff < 0.00001 && im_diff < 0.00001)
+            printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
+        else
+            printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
+    }
 }
 
 void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
@@ -26,20 +40,14 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
         Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer)
 {
     timeval startKernelTimer, endKernelTimer;
-    //Vars to use for reduction
-    dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
-        ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
     gettimeofday(&startKernelTimer, NULL);
 
-    for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
+    for(int n1 = 0; n1<number_bands; ++n1) //512
     {
-        for(int n1 = 0; n1<number_bands; ++n1) //512
+        for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
         {
             int indigp = inv_igp_index(my_igp);
             int igp = indinv(indigp);
-            dataType achtemp_re_loc[nend-nstart], achtemp_im_loc[nend-nstart];
-            for(int iw = nstart; iw < nend; ++iw) {achtemp_re_loc[iw] = 0.00; achtemp_im_loc[iw] = 0.00;}
-            CustomComplex<dataType> sch_store1 = CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
 
             for(int ig = 0; ig<ncouls; ++ig) //32768
             {
@@ -47,30 +55,17 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
                 {
                     CustomComplex<dataType> wdiff = wx_array(iw) - wtilde_array(my_igp,ig);
                     CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
-                    CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * sch_store1;
+                    CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
 
-                    achtemp_re_loc[iw] += CustomComplex_real(sch_array);
-                    achtemp_im_loc[iw] += CustomComplex_imag(sch_array);
+                    achtemp_re(iw) += CustomComplex_real(sch_array);
+                    achtemp_im(iw) += CustomComplex_imag(sch_array);
                 }
             }
-            ach_re0 += achtemp_re_loc[0];
-            ach_re1 += achtemp_re_loc[1];
-            ach_re2 += achtemp_re_loc[2];
-            ach_im0 += achtemp_im_loc[0];
-            ach_im1 += achtemp_im_loc[1];
-            ach_im2 += achtemp_im_loc[2];
         } //ngpown
     } //number_bands
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
-
-    achtemp_re(0) = ach_re0;
-    achtemp_re(1) = ach_re1;
-    achtemp_re(2) = ach_re2;
-    achtemp_im(0) = ach_im0;
-    achtemp_im(1) = ach_im1;
-    achtemp_im(2) = ach_im2;
 }
 
 int main(int argc, char** argv)
@@ -79,13 +74,31 @@ int main(int argc, char** argv)
     cout << "\n ************SEQUENTIAL VERSION  **********\n" << endl;
 
     int number_bands = 0, nvband = 0, ncouls = 0, nodes_per_group = 0;
-    int npes = 1;
     if(argc == 1)
     {
         number_bands = 512;
         nvband = 2;
         ncouls = 32768;
         nodes_per_group = 20;
+    }
+    else if(argc == 2)
+    {
+        if(strcmp(argv[1], "benchmark_problem") == 0)
+        {
+            number_bands = 512;
+            nvband = 2;
+            ncouls = 32768;
+            nodes_per_group = 20;
+        }
+        else if(strcmp(argv[1], "test_problem") == 0)
+        {
+            number_bands = 512;
+            nvband = 2;
+            ncouls = 512;
+            nodes_per_group = 20;
+        }
+        else
+            std::cout << "The problem sizes are either benchmark_problem or test_problem" << std::endl;
     }
     else if (argc == 5)
     {
@@ -100,7 +113,7 @@ int main(int argc, char** argv)
         std::cout << " ./a.out <number_bands> <number_valence_bands> <number_plane_waves> <nodes_per_mpi_group> " << endl;
         exit (0);
     }
-    int ngpown = ncouls / (nodes_per_group * npes);
+    int ngpown = ncouls / nodes_per_group;
 
 //Constants that will be used later
     const dataType e_lk = 10;
@@ -129,7 +142,7 @@ int main(int argc, char** argv)
         << "\t nstart = " << nstart << endl;
 
     CustomComplex<dataType> expr0(0.00, 0.00);
-    CustomComplex<dataType> expr(0.5, 0.5);
+    CustomComplex<dataType> expr(0.025, 0.025);
     size_t memFootPrint = 0.00;
 
     //ALLOCATE statements from fortran gppkernel.
@@ -164,8 +177,8 @@ int main(int argc, char** argv)
    for(int i=0; i<number_bands; i++)
        for(int j=0; j<ncouls; j++)
        {
-           aqsmtemp(i,j) = expr;
-           aqsntemp(i,j) = expr;
+           aqsmtemp(i,j) = ((double)(i))*expr;
+           aqsntemp(i,j) = ((double)(j))*expr;
        }
 
    for(int i=0; i<ngpown; i++)
@@ -176,7 +189,7 @@ int main(int argc, char** argv)
        }
 
    for(int i=0; i<ncouls; i++)
-       vcoul(i) = 1.0;
+       vcoul(i) = i*0.025;
 
 
     for(int ig=0; ig < ngpown; ++ig)
@@ -205,7 +218,10 @@ int main(int argc, char** argv)
         achtemp(iw) = CustomComplex<dataType>(achtemp_re(iw), achtemp_im(iw));
 
     //Check for correctness
-    correntess(achtemp(0));
+    if(strcmp(argv[1], "benchmark_problem") == 0)
+        correntess(0,achtemp(0));
+    else
+        correntess(1,achtemp(0));
 
     printf("\n Final achtemp\n");
         achtemp(0).print();

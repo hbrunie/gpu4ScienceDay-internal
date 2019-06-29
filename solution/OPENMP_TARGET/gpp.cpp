@@ -43,7 +43,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
 
 #elif defined(_OPENMP)
-#pragma omp parallel for simd\
+#pragma omp parallel for \
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
 #endif
     for(int my_igp=0; my_igp<ngpown; ++my_igp)

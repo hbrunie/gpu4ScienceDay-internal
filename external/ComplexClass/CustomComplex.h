@@ -155,6 +155,16 @@ class CustomComplex {
 #ifdef __CUDACC__
     CUDA_HOSTDEV
 #endif
+    friend inline CustomComplex<T> operator *(const dataType &b, const CustomComplex<T> &a) {
+       CustomComplex<T> result(a.x*b, a.y*b);
+       return result;
+    }
+
+
+    template<class T>
+#ifdef __CUDACC__
+    CUDA_HOSTDEV
+#endif
     friend inline CustomComplex<T> operator -(CustomComplex<T> a, CustomComplex<T> b) {
         CustomComplex<T> result(a.x - b.x, a.y - b.y);
         return result;
