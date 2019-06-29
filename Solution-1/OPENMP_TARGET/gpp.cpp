@@ -1,5 +1,5 @@
-#include "../external/ComplexClass/CustomComplex.h"
-#include "../external/arrayMD/arrayMDcpu.h"
+#include "../../external/ComplexClass/CustomComplex.h"
+#include "../../external/arrayMD/arrayMDcpu.h"
 #include <string.h>
 
 #define nstart 0
@@ -19,9 +19,9 @@ inline void correntess(int problem_size, CustomComplex<dataType> result)
         dataType im_diff = result.get_imag() - 2957453.636523;
 
         if(re_diff < 0.00001 && im_diff < 0.00001)
-            printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
+            printf("\nBenchmark Problem !!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
         else
-            printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
+            printf("\nBenchmark Problem !!!! FAILURE - Correctness test failed :-( :-(  \n");
     }
     else
     {
@@ -29,9 +29,9 @@ inline void correntess(int problem_size, CustomComplex<dataType> result)
         dataType im_diff = result.get_imag() - 11.431852;
 
         if(re_diff < 0.00001 && im_diff < 0.00001)
-            printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
+            printf("\nTest Problem !!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
         else
-            printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
+            printf("\nTest Problem !!!! FAILURE - Correctness test failed :-( :-(  \n");
     }
 }
 
@@ -42,12 +42,29 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
     timeval startKernelTimer, endKernelTimer;
     gettimeofday(&startKernelTimer, NULL);
 
+    dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
+        ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
+
+#pragma omp target enter data map(alloc:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+
+#pragma omp target update to(aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+#pragma omp target \
+    map(to:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size]) \
+    map(tofrom:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
+
+#pragma omp teams distribute parallel for collapse(2) \
+    reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
     for(int n1 = 0; n1<number_bands; ++n1) //512
     {
         for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
         {
             int indigp = inv_igp_index(my_igp);
             int igp = indinv(indigp);
+            dataType achtemp_re_loc[nend-nstart], achtemp_im_loc[nend-nstart];
+            for(int iw = nstart; iw < nend; ++iw) {achtemp_re_loc[iw] = 0.00; achtemp_im_loc[iw] = 0.00;}
 
             for(int ig = 0; ig<ncouls; ++ig) //32768
             {
@@ -57,12 +74,26 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
                     CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
                     CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
 
-                    achtemp_re(iw) += CustomComplex_real(sch_array);
-                    achtemp_im(iw) += CustomComplex_imag(sch_array);
+                    achtemp_re_loc[iw] += CustomComplex_real(sch_array);
+                    achtemp_im_loc[iw] += CustomComplex_imag(sch_array);
                 }
             }
+
+            ach_re0 += achtemp_re_loc[0];
+            ach_re1 += achtemp_re_loc[1];
+            ach_re2 += achtemp_re_loc[2];
+            ach_im0 += achtemp_im_loc[0];
+            ach_im1 += achtemp_im_loc[1];
+            ach_im2 += achtemp_im_loc[2];
         } //ngpown
     } //number_bands
+
+    achtemp_re(0) = ach_re0;
+    achtemp_re(1) = ach_re1;
+    achtemp_re(2) = ach_re2;
+    achtemp_im(0) = ach_im0;
+    achtemp_im(1) = ach_im1;
+    achtemp_im(2) = ach_im2;
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
@@ -71,7 +102,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
 int main(int argc, char** argv)
 {
 
-    cout << "\n ************SEQUENTIAL VERSION  **********\n" << endl;
+    cout << "\n ************OPENACC VERSION 1  **********\n" << endl;
 
     int number_bands = 0, nvband = 0, ncouls = 0, nodes_per_group = 0;
     if(argc == 1)
