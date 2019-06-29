@@ -45,17 +45,12 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
     dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
 
-#pragma omp target enter data map(alloc:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
-
-#pragma omp target update to(aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
 #pragma omp target \
     map(to:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
     aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size]) \
     map(tofrom:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
 
-#pragma omp teams distribute parallel for collapse(2) \
+#pragma omp teams distribute parallel for \
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
     for(int n1 = 0; n1<number_bands; ++n1) //512
     {
@@ -97,6 +92,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
+
 }
 
 int main(int argc, char** argv)

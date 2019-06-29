@@ -260,9 +260,6 @@ int main(int argc, char** argv)
         copyToDevice(d_wx_array.dptr, wx_array.dptr, wx_array.size);
 
 
-//  checkCudaErrors(cudaGetDeviceProperties(&deviceProp, device_id));
-//    noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
-
     gettimeofday(&startKernelTimer, NULL);
 
     noflagOCC_cudaKernel(number_bands, ngpown, ncouls, d_achtemp_re, d_achtemp_im, \

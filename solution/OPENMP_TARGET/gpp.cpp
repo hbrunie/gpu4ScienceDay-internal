@@ -100,6 +100,9 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
+
+#pragma omp target exit data map(delete:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
 }
 
 int main(int argc, char** argv)
