@@ -1,9 +1,5 @@
-#include "../../../ComplexClass/CustomComplex.h"
-#include "../../../arrayMD/arrayMDcpu.h"
-
-inline void init_structs(size_t number_bands, size_t ngpown, size_t ncouls, Array2D<CustomComplex<dataType>>& aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, \
-        Array2D<CustomComplex<dataType>>& wtilde_array, Array1D<dataType> &vcoul, Array1D<int> &inv_igp_index, Array1D<int> &indinv, \
-        Array1D<dataType>& wx_array);
+#include "../../external/ComplexClass/CustomComplex.h"
+#include "../../external/arrayMD/arrayMDcpu.h"
 
 void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
@@ -20,64 +16,6 @@ inline void correntess(CustomComplex<dataType> result)
         printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
 }
 
-inline void init_structs(size_t number_bands, size_t ngpown, size_t ncouls, Array2D<CustomComplex<dataType>>& aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, \
-        Array2D<CustomComplex<dataType>>& wtilde_array, Array1D<dataType> &vcoul, Array1D<int> &inv_igp_index, Array1D<int> &indinv, \
-        Array1D<dataType>& wx_array)
-{
-    const dataType dw = 1;
-    const dataType e_lk = 10;
-    const dataType to1 = 1e-6;
-    const dataType limittwo = pow(0.5,2);
-    const dataType e_n1kq= 6.0;
-    CustomComplex<dataType> expr0(0.00, 0.00);
-    CustomComplex<dataType> expr(0.5, 0.5);
-
-#pragma acc enter data copyin(aqsmtemp, aqsntemp, vcoul, inv_igp_index, indinv, \
-        I_eps_array, wtilde_array, wx_array)
-
-#pragma acc enter data create(aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsntemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
-
-#pragma acc parallel loop present(aqsmtemp, aqsntemp)
-   for(int i=0; i<number_bands; i++)
-       for(int j=0; j<ncouls; j++)
-       {
-           aqsmtemp(i,j) = CustomComplex<dataType>(0.5, 0.5);
-           aqsntemp(i,j) = CustomComplex<dataType>(0.5, 0.5);
-       }
-
-#pragma acc parallel loop copyin(expr) present(I_eps_array, wtilde_array)
-   for(int i=0; i<ngpown; i++)
-       for(int j=0; j<ncouls; j++)
-       {
-           I_eps_array(i,j) = expr;
-           wtilde_array(i,j) = expr;
-       }
-
-#pragma acc parallel loop present(vcoul)
-   for(int i=0; i<ncouls; i++)
-       vcoul(i) = 1.0;
-
-
-#pragma acc parallel loop present(inv_igp_index)
-    for(int ig=0; ig < ngpown; ++ig)
-        inv_igp_index(ig) = (ig+1) * ncouls / ngpown;
-
-#pragma acc parallel loop present(indinv)
-    for(int ig=0; ig<ncouls; ++ig)
-        indinv(ig) = ig;
-        indinv(ncouls) = ncouls-1;
-
-#pragma acc parallel loop present(wx_array)
-       for(int iw=nstart; iw<nend; ++iw)
-       {
-           wx_array(iw) = e_lk - e_n1kq + dw*((iw+1)-2);
-           if(wx_array(iw) < to1) wx_array(iw) = to1;
-       }
-
-}
-
-
 void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
         Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer)
@@ -88,10 +26,26 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
     gettimeofday(&startKernelTimer, NULL);
 
-#pragma acc parallel loop gang vector collapse(2) \
-    present(inv_igp_index, indinv, aqsmtemp, aqsntemp, wtilde_array, wx_array, I_eps_array, vcoul) \
-    reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)\
-    num_gangs(number_bands*ngpown)
+#if defined(OPENMP_TARGET)
+#pragma omp target enter data map(alloc:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+
+#pragma omp target update to(aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+    gettimeofday(&startKernelTimer, NULL);
+
+#pragma omp target \
+    map(to:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
+    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size]) \
+    map(tofrom:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
+
+#pragma omp teams distribute parallel for collapse(2) \
+    reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
+
+#elif defined(_OPENMP)
+#pragma omp parallel for simd\
+    reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
+#endif
     for(int my_igp=0; my_igp<ngpown; ++my_igp)
     {
         for(int n1 = 0; n1<number_bands; ++n1)
@@ -137,7 +91,11 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
 int main(int argc, char** argv)
 {
 
-    cout << "\n ************OpenACC  **********\n" << endl;
+#if defined(OPENMP_TARGET)
+    cout << "\n ************OpenMP 4.5**********\n" << endl;
+#elif defined(_OPENMP)
+    cout << "\n ************OpenMP 3.0**********\n" << endl;
+#endif
 
     int number_bands = 0, nvband = 0, ncouls = 0, nodes_per_group = 0;
     int npes = 1;
@@ -163,10 +121,54 @@ int main(int argc, char** argv)
     }
     int ngpown = ncouls / (nodes_per_group * npes);
 
+//Constants that will be used later
+    const dataType e_lk = 10;
+    const dataType dw = 1;
+    const dataType to1 = 1e-6;
+    const dataType gamma = 0.5;
+    const dataType sexcut = 4.0;
+    const dataType limitone = 1.0/(to1*4.0);
+    const dataType limittwo = pow(0.5,2);
+    const dataType e_n1kq= 6.0;
+    const dataType occ=1.0;
+
     //Start the timer before the work begins.
     dataType elapsedKernelTimer, elapsedTimer;
     timeval startTimer, endTimer;
     gettimeofday(&startTimer, NULL);
+
+
+    //OpenMP Printing of threads on Host and Device
+    int tid, numThreads, numTeams;
+#if defined(_OPENMP)
+#pragma omp parallel shared(numThreads) private(tid)
+    {
+        tid = omp_get_thread_num();
+        if(tid == 0)
+            numThreads = omp_get_num_threads();
+    }
+    std::cout << "Number of OpenMP Threads = " << numThreads << endl;
+#endif
+
+#if defined(OPENMP_TARGET)
+#pragma omp target map(tofrom: numTeams, numThreads)
+#pragma omp teams shared(numTeams) private(tid)
+    {
+        tid = omp_get_team_num();
+        if(tid == 0)
+        {
+            numTeams = omp_get_num_teams();
+#pragma omp parallel
+            {
+                int ttid = omp_get_thread_num();
+                if(ttid == 0)
+                    numThreads = omp_get_num_threads();
+            }
+        }
+    }
+    std::cout << "Number of OpenMP Teams = " << numTeams << std::endl;
+    std::cout << "Number of OpenMP DEVICE Threads = " << numThreads << std::endl;
+#endif
 
     //Printing out the params passed.
     std::cout << "Sizeof(CustomComplex<dataType> = " << sizeof(CustomComplex<dataType>) << " bytes" << std::endl;
@@ -211,8 +213,6 @@ int main(int argc, char** argv)
     //Print Memory Foot print
     cout << "Memory Foot Print = " << memFootPrint / pow(1024,3) << " GBs" << endl;
 
-
-#if !defined(OPENACC)
    for(int i=0; i<number_bands; i++)
        for(int j=0; j<ncouls; j++)
        {
@@ -234,6 +234,7 @@ int main(int argc, char** argv)
     for(int ig=0; ig < ngpown; ++ig)
         inv_igp_index(ig) = (ig+1) * ncouls / ngpown;
 
+    //Do not know yet what this array represents
     for(int ig=0; ig<ncouls; ++ig)
         indinv(ig) = ig;
         indinv(ncouls) = ncouls-1;
@@ -249,10 +250,6 @@ int main(int argc, char** argv)
             wx_array(iw) = e_lk - e_n1kq + dw*((iw+1)-2);
             if(wx_array(iw) < to1) wx_array(iw) = to1;
         }
-
-#else
-    init_structs(number_bands, ngpown, ncouls, aqsmtemp, aqsntemp, I_eps_array, wtilde_array, vcoul, inv_igp_index, indinv, wx_array);
-#endif //Initailize OpenACC structures on the device directily
 
     noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
 

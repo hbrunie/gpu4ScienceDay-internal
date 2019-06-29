@@ -2,23 +2,25 @@
 
 ## Project Layout
 
-- `^/GPP`
+- `^/gpp`
   - `gpp.cpp`
     - blabla...
     - blabla...
-  - `Solutions/`
-    - all you need to win the JetBot!
 - `^/external`
   - `arrayMD/`
     - an array...
   - `ComplexClass/`
     - a complex...
+- `^/solution`
+  - `CUDA/`
+  - `OPENACC/`
+  - `OPENMP_TARGET/`
 
 ## Development Environment
 
 ```shell
 $ git clone https://github.com/to-be-fixed
-$ cd gpu4science-app/GPP
+$ cd gpu4science-app/gpp
 ```
 
 ## Cori GPU
@@ -29,13 +31,21 @@ $ module load esslurm
 $ salloc -A gpu4sci -C gpu -N 1 -t 04:00:00 -c 10 --gres=gpu:1
 ```
 
+### CUDA:
+```shell
+# setup
+$ module purge
+$ module load cuda esslurm
+
+# build
+$ make COMP=NVCC
+```
+
 ### OpenACC:
 ```shell
 # setup
 $ module purge
-$ module load cuda
-$ module load pgi
-$ module load esslurm
+$ module load pgi cuda esslurm
 
 # build
 $ make COMP=pgi OPENACC=y GPU=y
@@ -45,22 +55,10 @@ $ make COMP=pgi OPENACC=y GPU=y
 ```shell
 # setup
 $ module purge
-$ module load esslurm
-$ module load PrgEnv-llvm/9.0.0-git_20190220
+$ module load PrgEnv-llvm/9.0.0-git_20190220 esslurm
 
 # build
 $ make COMP=clang OPENMP=y OPENMP_TARGET=y GPU=y
-```
-
-### CUDA:
-```shell
-# setup
-$ module purge
-$ module load esslurm
-$ module load cuda
-
-# build
-$ make COMP=NVCC
 ```
 
 ### Run:

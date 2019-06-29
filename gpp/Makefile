@@ -1,4 +1,5 @@
-include ../../../Makefile.inc
+include ../Makefile.inc
+
 
 gpp_obj = gpp.o
 
@@ -13,7 +14,7 @@ gpp: $(gpp_obj)
 %.o: %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-gpp.cpp: ../../../ComplexClass/CustomComplex.h
+gpp.cpp: ../external/ComplexClass/CustomComplex.h
 
 clean:
 	rm -f *.o *.lst $(EXEC).ex *.ptx *.cub
