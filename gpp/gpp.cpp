@@ -31,9 +31,9 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
     gettimeofday(&startKernelTimer, NULL);
 
-    for(int my_igp=0; my_igp<ngpown; ++my_igp)
+    for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
     {
-        for(int n1 = 0; n1<number_bands; ++n1)
+        for(int n1 = 0; n1<number_bands; ++n1) //512
         {
             int indigp = inv_igp_index(my_igp);
             int igp = indinv(indigp);
@@ -41,9 +41,9 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
             for(int iw = nstart; iw < nend; ++iw) {achtemp_re_loc[iw] = 0.00; achtemp_im_loc[iw] = 0.00;}
             CustomComplex<dataType> sch_store1 = CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
 
-            for(int ig = 0; ig<ncouls; ++ig)
+            for(int ig = 0; ig<ncouls; ++ig) //32768
             {
-                for(int iw = nstart; iw < nend; ++iw)
+                for(int iw = nstart; iw < nend; ++iw) //3
                 {
                     CustomComplex<dataType> wdiff = wx_array(iw) - wtilde_array(my_igp,ig);
                     CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
