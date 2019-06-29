@@ -16,7 +16,7 @@ inline void correntess(int problem_size, CustomComplex<dataType> result)
     if(problem_size == 0)
     {
         dataType re_diff = result.get_real() - -138754044073.245178;
-        dataType im_diff = result.get_imag() - ;
+        dataType im_diff = result.get_imag() - 16511731238167.728516;
 
         if(re_diff < 0.00001 && im_diff < 0.00001)
             printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
