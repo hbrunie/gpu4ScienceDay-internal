@@ -70,7 +70,12 @@ $ module load PrgEnv-llvm/9.0.0-git_20190220 esslurm
 $ make COMP=clang OPENMP=y OPENMP_TARGET=y GPU=y
 ```
 
-### Run:
+### Run test problem (fast, good for debugging):
 ```shell
-$ srun ./gpp.ex
+$ srun ./gpp.ex test_problem
+```
+
+### Run benchmark problem (slow, this is how we will determine the hackathon winner):
+```shell
+$ srun ./gpp.ex benchmark_problem
 ```
