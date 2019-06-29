@@ -1,16 +1,6 @@
 #include "../../../ComplexClass/CustomComplex.h"
 #include "../../../arrayMD/arrayMDcpu.h"
 
-#define nstart 0
-#define nend 3
-
-using dataType=double;
-#if defined(OPENACC)
-inline void init_structs(size_t number_bands, size_t ngpown, size_t ncouls, Array2D<CustomComplex<dataType>>& aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, \
-        Array2D<CustomComplex<dataType>>& wtilde_array, Array1D<dataType> &vcoul, Array1D<int> &inv_igp_index, Array1D<int> &indinv, \
-        Array1D<dataType>& wx_array);
-#endif
-
 void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
         Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer);
@@ -25,66 +15,6 @@ inline void correntess(CustomComplex<dataType> result)
     else
         printf("\n!!!! FAILURE - Correctness test failed :-( :-(  \n");
 }
-
-#if defined(OPENACC)
-inline void init_structs(size_t number_bands, size_t ngpown, size_t ncouls, Array2D<CustomComplex<dataType>>& aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, \
-        Array2D<CustomComplex<dataType>>& wtilde_array, Array1D<dataType> &vcoul, Array1D<int> &inv_igp_index, Array1D<int> &indinv, \
-        Array1D<dataType>& wx_array)
-{
-    const dataType dw = 1;
-    const dataType e_lk = 10;
-    const dataType to1 = 1e-6;
-    const dataType limittwo = pow(0.5,2);
-    const dataType e_n1kq= 6.0;
-    CustomComplex<dataType> expr0(0.00, 0.00);
-    CustomComplex<dataType> expr(0.5, 0.5);
-
-#pragma acc enter data copyin(aqsmtemp, aqsntemp, vcoul, inv_igp_index, indinv, \
-        I_eps_array, wtilde_array, wx_array)
-
-#pragma acc enter data create(aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsntemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
-
-#pragma acc parallel loop present(aqsmtemp, aqsntemp)
-   for(int i=0; i<number_bands; i++)
-       for(int j=0; j<ncouls; j++)
-       {
-           aqsmtemp(i,j) = CustomComplex<dataType>(0.5, 0.5);
-           aqsntemp(i,j) = CustomComplex<dataType>(0.5, 0.5);
-       }
-
-#pragma acc parallel loop copyin(expr) present(I_eps_array, wtilde_array)
-   for(int i=0; i<ngpown; i++)
-       for(int j=0; j<ncouls; j++)
-       {
-           I_eps_array(i,j) = expr;
-           wtilde_array(i,j) = expr;
-       }
-
-#pragma acc parallel loop present(vcoul)
-   for(int i=0; i<ncouls; i++)
-       vcoul(i) = 1.0;
-
-
-#pragma acc parallel loop present(inv_igp_index)
-    for(int ig=0; ig < ngpown; ++ig)
-        inv_igp_index(ig) = (ig+1) * ncouls / ngpown;
-
-#pragma acc parallel loop present(indinv)
-    for(int ig=0; ig<ncouls; ++ig)
-        indinv(ig) = ig;
-        indinv(ncouls) = ncouls-1;
-
-#pragma acc parallel loop present(wx_array)
-       for(int iw=nstart; iw<nend; ++iw)
-       {
-           wx_array(iw) = e_lk - e_n1kq + dw*((iw+1)-2);
-           if(wx_array(iw) < to1) wx_array(iw) = to1;
-       }
-
-}
-#endif
-
 
 void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
@@ -115,11 +45,6 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
 #elif defined(_OPENMP)
 #pragma omp parallel for simd\
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
-#elif defined(OPENACC)
-#pragma acc parallel loop gang vector collapse(2) \
-    present(inv_igp_index, indinv, aqsmtemp, aqsntemp, wtilde_array, wx_array, I_eps_array, vcoul) \
-    reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)\
-    num_gangs(number_bands*ngpown)
 #endif
     for(int my_igp=0; my_igp<ngpown; ++my_igp)
     {
@@ -170,8 +95,6 @@ int main(int argc, char** argv)
     cout << "\n ************OpenMP 4.5**********\n" << endl;
 #elif defined(_OPENMP)
     cout << "\n ************OpenMP 3.0**********\n" << endl;
-#elif defined(OPENACC)
-    cout << "\n ************OpenACC  **********\n" << endl;
 #endif
 
     int number_bands = 0, nvband = 0, ncouls = 0, nodes_per_group = 0;
@@ -227,7 +150,6 @@ int main(int argc, char** argv)
     std::cout << "Number of OpenMP Threads = " << numThreads << endl;
 #endif
 
-#if COMP!=pgi
 #if defined(OPENMP_TARGET)
 #pragma omp target map(tofrom: numTeams, numThreads)
 #pragma omp teams shared(numTeams) private(tid)
@@ -247,7 +169,6 @@ int main(int argc, char** argv)
     std::cout << "Number of OpenMP Teams = " << numTeams << std::endl;
     std::cout << "Number of OpenMP DEVICE Threads = " << numThreads << std::endl;
 #endif
-#endif
 
     //Printing out the params passed.
     std::cout << "Sizeof(CustomComplex<dataType> = " << sizeof(CustomComplex<dataType>) << " bytes" << std::endl;
@@ -265,35 +186,33 @@ int main(int argc, char** argv)
 
     //ALLOCATE statements from fortran gppkernel.
     Array1D<CustomComplex<dataType>> achtemp(nend-nstart);
-    memFootPrint += (nend-nstart)*sizeof(CustomComplex<dataType>);
+    memFootPrint += achtemp.getSizeInBytes();
 
     Array2D<CustomComplex<dataType>> aqsmtemp(number_bands, ncouls);
     Array2D<CustomComplex<dataType>> aqsntemp(number_bands, ncouls);
-    memFootPrint += 2*(number_bands*ncouls)*sizeof(CustomComplex<dataType>);
+    memFootPrint += 2*aqsmtemp.getSizeInBytes();
 
     Array2D<CustomComplex<dataType>> I_eps_array(ngpown, ncouls);
     Array2D<CustomComplex<dataType>> wtilde_array(ngpown, ncouls);
-    memFootPrint += 2*(ngpown*ncouls)*sizeof(CustomComplex<dataType>);
+    memFootPrint += 2*I_eps_array.getSizeInBytes();
 
     Array1D<dataType> vcoul(ncouls);
-    memFootPrint += ncouls*sizeof(dataType);
+    memFootPrint += vcoul.getSizeInBytes();;
 
     Array1D<int> inv_igp_index(ngpown);
     Array1D<int> indinv(ncouls+1);
-    memFootPrint += ngpown*sizeof(int);
-    memFootPrint += (ncouls+1)*sizeof(int);
+    memFootPrint += inv_igp_index.getSizeInBytes();;
+    memFootPrint += indinv.getSizeInBytes();;
 
 //Real and imaginary parts of achtemp calculated separately to avoid critical.
     Array1D<dataType> achtemp_re(nend-nstart);
     Array1D<dataType> achtemp_im(nend-nstart);
     Array1D<dataType> wx_array(nend-nstart);
-    memFootPrint += 3*(nend-nstart)*sizeof(dataType);
+    memFootPrint += 3*wx_array.getSizeInBytes();
 
     //Print Memory Foot print
     cout << "Memory Foot Print = " << memFootPrint / pow(1024,3) << " GBs" << endl;
 
-
-#if !defined(OPENACC)
    for(int i=0; i<number_bands; i++)
        for(int j=0; j<ncouls; j++)
        {
@@ -331,10 +250,6 @@ int main(int argc, char** argv)
             wx_array(iw) = e_lk - e_n1kq + dw*((iw+1)-2);
             if(wx_array(iw) < to1) wx_array(iw) = to1;
         }
-
-#else
-    init_structs(number_bands, ngpown, ncouls, aqsmtemp, aqsntemp, I_eps_array, wtilde_array, vcoul, inv_igp_index, indinv, wx_array);
-#endif //Initailize OpenACC structures on the device directily
 
     noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
 

@@ -1,6 +1,4 @@
 #include "../../../ComplexClass/CustomComplex.h"
-#define nstart 0
-#define nend 3
 
 __global__ void gpp_2D_CUDAKernel(int number_bands, int ngpown, int ncouls, \
     device_Array1D<dataType> achtemp_re, device_Array1D<dataType> achtemp_im, \

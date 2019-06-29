@@ -1,6 +1,5 @@
 include ../../../Makefile.inc
 
-
 gpp_obj = gpp.o
 
 CXXFLAGS += -I$(CUDA_ROOT)/include

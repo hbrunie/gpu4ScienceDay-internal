@@ -22,6 +22,10 @@
 
 using namespace std;
 using dataType=double;
+#define nstart 0
+#define nend 3
+
+
 
 template<class type>
 

@@ -5,11 +5,6 @@
 #define nend 3
 
 using dataType=double;
-#if defined(OPENACC)
-inline void init_structs(size_t number_bands, size_t ngpown, size_t ncouls, Array2D<CustomComplex<dataType>>& aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, \
-        Array2D<CustomComplex<dataType>>& wtilde_array, Array1D<dataType> &vcoul, Array1D<int> &inv_igp_index, Array1D<int> &indinv, \
-        Array1D<dataType>& wx_array);
-#endif
 
 void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
@@ -139,29 +134,29 @@ int main(int argc, char** argv)
 
     //ALLOCATE statements from fortran gppkernel.
     Array1D<CustomComplex<dataType>> achtemp(nend-nstart);
-    memFootPrint += (nend-nstart)*sizeof(CustomComplex<dataType>);
+    memFootPrint += achtemp.getSizeInBytes();
 
     Array2D<CustomComplex<dataType>> aqsmtemp(number_bands, ncouls);
     Array2D<CustomComplex<dataType>> aqsntemp(number_bands, ncouls);
-    memFootPrint += 2*(number_bands*ncouls)*sizeof(CustomComplex<dataType>);
+    memFootPrint += 2*aqsmtemp.getSizeInBytes();
 
     Array2D<CustomComplex<dataType>> I_eps_array(ngpown, ncouls);
     Array2D<CustomComplex<dataType>> wtilde_array(ngpown, ncouls);
-    memFootPrint += 2*(ngpown*ncouls)*sizeof(CustomComplex<dataType>);
+    memFootPrint += 2*I_eps_array.getSizeInBytes();
 
     Array1D<dataType> vcoul(ncouls);
-    memFootPrint += ncouls*sizeof(dataType);
+    memFootPrint += vcoul.getSizeInBytes();;
 
     Array1D<int> inv_igp_index(ngpown);
     Array1D<int> indinv(ncouls+1);
-    memFootPrint += ngpown*sizeof(int);
-    memFootPrint += (ncouls+1)*sizeof(int);
+    memFootPrint += inv_igp_index.getSizeInBytes();;
+    memFootPrint += indinv.getSizeInBytes();;
 
 //Real and imaginary parts of achtemp calculated separately to avoid critical.
     Array1D<dataType> achtemp_re(nend-nstart);
     Array1D<dataType> achtemp_im(nend-nstart);
     Array1D<dataType> wx_array(nend-nstart);
-    memFootPrint += 3*(nend-nstart)*sizeof(dataType);
+    memFootPrint += 3*wx_array.getSizeInBytes();
 
     //Print Memory Foot print
     cout << "Memory Foot Print = " << memFootPrint / pow(1024,3) << " GBs" << endl;
@@ -187,7 +182,6 @@ int main(int argc, char** argv)
     for(int ig=0; ig < ngpown; ++ig)
         inv_igp_index(ig) = (ig+1) * ncouls / ngpown;
 
-    //Do not know yet what this array represents
     for(int ig=0; ig<ncouls; ++ig)
         indinv(ig) = ig;
         indinv(ncouls) = ncouls-1;
@@ -204,6 +198,7 @@ int main(int argc, char** argv)
             if(wx_array(iw) < to1) wx_array(iw) = to1;
         }
 
+    //The solver kernel
     noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
 
     for(int iw=nstart; iw<nend; ++iw)
