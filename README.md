@@ -19,6 +19,7 @@
 ## Development Environment
 
 ```shell
+$ cd $SCRATCH
 $ git clone https://github.com/to-be-fixed
 $ cd gpu4science-app/gpp
 ```
