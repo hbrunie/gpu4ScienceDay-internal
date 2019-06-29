@@ -11,13 +11,14 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
         Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
         Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer);
 
+// Here we are checking to see if the answers are correct
 inline void correntess(int problem_size, CustomComplex<dataType> result)
 {
     if(problem_size == 0)
     {
         dataType re_diff = result.get_real() - -24852.551551;
         dataType im_diff = result.get_imag() - 2957453.636523;
-
+    
         if(re_diff < 0.00001 && im_diff < 0.00001)
             printf("\n!!!! SUCCESS - !!!! Correctness test passed :-D :-D\n\n");
         else
@@ -42,27 +43,38 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
     timeval startKernelTimer, endKernelTimer;
     gettimeofday(&startKernelTimer, NULL);
 
-    for(int n1 = 0; n1<number_bands; ++n1) //512
+//***************************  THIS IS THE MAIN LOOP ************************************* 
+// Focus your optimization efforts here!!! You shouldn't need to change code anywhere else
+// Hints: try different loop ordering, think about data reduction
+        
+    // hint: pragma    
+    for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
     {
-        for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
+        // hint: pragma    
+        for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
         {
             int indigp = inv_igp_index(my_igp);
             int igp = indinv(indigp);
 
-            for(int ig = 0; ig<ncouls; ++ig) //32768
+            // hint: pragma   
+            for(int ig = 0; ig<ncouls; ++ig) //32768 iterations - most of the compute effort is here!
             {
-                for(int iw = nstart; iw < nend; ++iw) //3
+                // hint: pragma    
+                for(int iw = nstart; iw < nend; ++iw) //3 iterations
                 {
                     CustomComplex<dataType> wdiff = wx_array(iw) - wtilde_array(my_igp,ig);
                     CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
                     CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
 
+                    // hint: is there a faster way to do this?    
                     achtemp_re(iw) += CustomComplex_real(sch_array);
                     achtemp_im(iw) += CustomComplex_imag(sch_array);
                 }
             }
         } //ngpown
     } //number_bands
+        
+    // ***************************** END OF MAIN LOOP *****************************************    
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
@@ -211,7 +223,7 @@ int main(int argc, char** argv)
             if(wx_array(iw) < to1) wx_array(iw) = to1;
         }
 
-    //The solver kernel
+    //The solver kernel -- this calls our MAIN LOOP (where you should focus your optimizations!)
     noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
 
     for(int iw=nstart; iw<nend; ++iw)
