@@ -19,6 +19,7 @@
 ## Development Environment
 
 ```shell
+$ cd $SCRATCH
 $ git clone https://github.com/to-be-fixed
 $ cd gpu4science-app/gpp
 ```
@@ -29,6 +30,15 @@ $ cd gpu4science-app/gpp
 ```shell
 $ module load esslurm
 $ salloc -A gpu4sci -C gpu -N 1 -t 04:00:00 -c 10 --gres=gpu:1
+```
+
+### Test CPU (sequential) version:
+```shell
+$ module purge
+$ module load intel esslurm
+
+# build
+$ make COMP=ic
 ```
 
 ### CUDA:
@@ -61,7 +71,12 @@ $ module load PrgEnv-llvm/9.0.0-git_20190220 esslurm
 $ make COMP=clang OPENMP=y OPENMP_TARGET=y GPU=y
 ```
 
-### Run:
+### Run test problem (fast, good for debugging):
 ```shell
-$ srun ./gpp.ex
+$ srun ./gpp.ex test_problem
+```
+
+### Run benchmark problem (slow, this is how we will determine the hackathon winner):
+```shell
+$ srun ./gpp.ex benchmark_problem
 ```
