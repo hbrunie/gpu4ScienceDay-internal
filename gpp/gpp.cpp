@@ -59,9 +59,11 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 
     // hint: parallel pragma
     // hint: data reduction
+    
     for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
     {
 
+        // hint: think about loop ordering
         for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
         {
             int indigp = inv_igp_index[my_igp];
