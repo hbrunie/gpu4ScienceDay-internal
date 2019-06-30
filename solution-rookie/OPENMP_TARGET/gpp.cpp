@@ -56,17 +56,23 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 
     dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
+    
+//***************************  THIS IS THE MAIN LOOP *************************************
+// Focus your optimization efforts here!!! You shouldn't need to change code anywhere else    
 
 #pragma omp target \
     map(to:aqsmtemp[0:aqsmtemp_size], vcoul[0:vcoul_size], inv_igp_index[0:inv_igp_index_size], indinv[0:indinv_size], \
     aqsntemp[0:aqsmtemp_size], I_eps_array[0:I_eps_array_size], wx_array[nstart:nend], wtilde_array[0:wtilde_array_size]) \
     map(tofrom:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
+    
+// hint: think about where the data are (host or device)    
 
 #pragma omp teams distribute parallel for \
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
     for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
     {
-        // hint: pragma
+        // hint: think about loop ordering
+        // hint: think about loop collapsing
         for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
         {
             int indigp = inv_igp_index[my_igp];

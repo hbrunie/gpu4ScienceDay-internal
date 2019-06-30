@@ -56,12 +56,17 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 
     dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
+    
+//***************************  THIS IS THE MAIN LOOP *************************************
+// Focus your optimization efforts here!!! You shouldn't need to change code anywhere else
 
 #pragma acc parallel loop gang vector\
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
+    // hint: check to see where data are (host or device?)
+    
+    // hint: think about loop ordering
     for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
     {
-        // hint: pragma
         for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
         {
             int indigp = inv_igp_index[my_igp];
