@@ -56,6 +56,9 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 
     dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
+    
+//***************************  THIS IS THE MAIN LOOP *************************************
+// Focus your optimization efforts here!!! You shouldn't need to change code anywhere else
 
 #pragma omp target enter data map(alloc:aqsmtemp[0:aqsmtemp_size], vcoul[0:vcoul_size], inv_igp_index[0:inv_igp_index_size], indinv[0:indinv_size], \
     aqsntemp[0:aqsntemp_size], I_eps_array[0:I_eps_array_size], wx_array[0:wx_array_size], wtilde_array[0:wtilde_array_size])
@@ -109,6 +112,8 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
     achtemp_im[0] = ach_im0;
     achtemp_im[1] = ach_im1;
     achtemp_im[2] = ach_im2;
+    
+    // ***************************** END OF MAIN LOOP *****************************************    
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
