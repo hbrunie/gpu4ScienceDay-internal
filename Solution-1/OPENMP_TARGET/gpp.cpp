@@ -245,8 +245,13 @@ int main(int argc, char** argv)
         achtemp(iw) = CustomComplex<dataType>(achtemp_re(iw), achtemp_im(iw));
 
     //Check for correctness
-    if(strcmp(argv[1], "benchmark_problem") == 0)
-        correntess(0,achtemp(0));
+    if(argc == 2)
+    {
+        if(strcmp(argv[1], "benchmark_problem") == 0)
+            correntess(0,achtemp(0));
+        else if(strcmp(argv[1], "test_problem") == 0)
+            correntess(1,achtemp(0));
+    }
     else
         correntess(1,achtemp(0));
 
