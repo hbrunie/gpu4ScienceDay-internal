@@ -56,28 +56,27 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 
 //***************************  THIS IS THE MAIN LOOP *************************************
 // Focus your optimization efforts here!!! You shouldn't need to change code anywhere else
-// Hints: try different loop ordering, think about data reduction
 
-    // hint: pragma
+    // hint: parallel pragma
+    // hint: data reduction
     for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
     {
-        // hint: pragma
+
         for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
         {
             int indigp = inv_igp_index[my_igp];
             int igp = indinv[indigp];
 
-            // hint: pragma
             for(int ig = 0; ig<ncouls; ++ig) //32768 iterations - most of the compute effort is here!
             {
-                // hint: pragma
+
                 for(int iw = nstart; iw < nend; ++iw) //3 iterations
                 {
                     CustomComplex<dataType> wdiff = wx_array[iw] - wtilde_array(my_igp,ig);
                     CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
                     CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul[igp];
 
-                    // hint: is there a faster way to do this?
+                    // hint: atomic operation
                     achtemp_re[iw] += CustomComplex_real(sch_array);
                     achtemp_im[iw] += CustomComplex_imag(sch_array);
                 }
