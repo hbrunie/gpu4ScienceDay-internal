@@ -71,6 +71,16 @@ $ module load PrgEnv-llvm/9.0.0-git_20190220 esslurm
 $ make COMP=clang OPENMP=y OPENMP_TARGET=y GPU=y
 ```
 
+### Kokkos:
+```shell
+# setup
+$ module purge
+$ module load kokkos cuda esslurm
+
+# build
+$ make COMP=kokkos
+```
+
 ### Run test problem (fast, good for debugging):
 ```shell
 $ srun ./gpp.ex test_problem

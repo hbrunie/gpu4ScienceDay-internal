@@ -187,7 +187,7 @@ int main(int argc, char** argv)
     cout << "Memory Foot Print = " << memFootPrint / pow(1024,3) << " GBs" << endl;
 
    for(int i=0; i<number_bands; i++)
-       j
+       for(int j=0; j<ncouls; j++)
        {
            aqsmtemp(i,j) = expr;
            aqsntemp(i,j) = expr;

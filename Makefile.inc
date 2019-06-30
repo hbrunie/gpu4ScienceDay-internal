@@ -2,6 +2,7 @@ NVCC:=nvcc
 OPENMP:=n
 OPENMP_TARGET:=n
 OPENACC:=n
+KOKKOS:=n
 GPU:=n
 GPU_OPENACC_UM:=n
 GPU_CUDA_UM:=n
@@ -56,6 +57,10 @@ else ifeq ($(findstring NVCC,$(COMP)),NVCC)
      CC=nvcc
      CXX=nvcc
      COMP_CHOICE=nvcc
+else ifeq ($(findstring kokkos,$(COMP)),kokkos)
+     CC=nvcc_wrapper
+     CXX=nvcc_wrapper
+     COMP_CHOICE=kokkos
 else
      $(warning Warning COMP is not set)
 endif
@@ -244,6 +249,23 @@ else ifeq ($(COMP_CHOICE),pgi)
 # CUDA COMPILER - nvcc
 #
 else ifeq ($(COMP_CHOICE),nvcc)
+  ifeq ($(LMOD_SYSTEM_NAME),summitdev)
+    cudafalgs:=-arch=sm_60
+  else ifeq ($(LMOD_SYSTEM_NAME),summit)
+    cudaflags:=-arch=sm_70
+  else ifeq ($(HOSTNAME),psgcluster)
+    cudaflags:=-arch=sm_70
+  else ifeq ($(SLURM_CLUSTER_NAME),escori)
+    cudaflags:=-arch=sm_70
+  endif
+  CFLAGS += -O3 -std=c++11 -Wno-deprecated-gpu-targets $(cudaflags)
+  CFLAGS += -I$(CUDA_PATH)/samples/common/inc/
+  CXXFLAGS += $(CFLAGS)
+
+#
+# Kokkos COMPILER - nvcc_wrapper
+#
+else ifeq ($(COMP_CHOICE),kokkos)
   ifeq ($(LMOD_SYSTEM_NAME),summitdev)
     cudafalgs:=-arch=sm_60
   else ifeq ($(LMOD_SYSTEM_NAME),summit)
