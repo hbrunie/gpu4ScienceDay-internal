@@ -1,5 +1,5 @@
 #include "../../external/ComplexClass/CustomComplex.h"
-#include "../../external/arrayMD/arrayMDcpu.h"
+#include "../../external/commonDefines.h"
 #include <string.h>
 
 #define nstart 0
@@ -132,7 +132,10 @@ int main(int argc, char** argv)
             nodes_per_group = 20;
         }
         else
+        {
             std::cout << "The problem sizes are either benchmark_problem or test_problem" << std::endl;
+            exit(0);
+        }
     }
     else if (argc == 5)
     {
@@ -153,12 +156,7 @@ int main(int argc, char** argv)
     const dataType e_lk = 10;
     const dataType dw = 1;
     const dataType to1 = 1e-6;
-    const dataType gamma = 0.5;
-    const dataType sexcut = 4.0;
-    const dataType limitone = 1.0/(to1*4.0);
-    const dataType limittwo = pow(0.5,2);
     const dataType e_n1kq= 6.0;
-    const dataType occ=1.0;
 
     //Start the timer before the work begins.
     dataType elapsedKernelTimer, elapsedTimer;
