@@ -7,9 +7,21 @@
 
 using dataType=double;
 
-void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
-        Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
-        Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer);
+inline void* safe_malloc(size_t n)
+{
+    void *p = malloc(n);
+    if (p == NULL)
+    {
+        fprintf(stderr, "Fatal: failed to allocate %zu bytes.\n", n);
+        abort();
+    }
+    return p;
+}
+
+
+void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *inv_igp_index, int *indinv, dataType *wx_array, CustomComplex<dataType> *wtilde_array, \
+        CustomComplex<dataType> *aqsmtemp, CustomComplex<dataType> *aqsntemp, CustomComplex<dataType> *I_eps_array, dataType *vcoul, \
+        dataType *achtemp_re, dataType *achtemp_im, dataType &elapsedKernelTimer);
 
 inline void correntess(int problem_size, CustomComplex<dataType> result)
 {
@@ -35,9 +47,9 @@ inline void correntess(int problem_size, CustomComplex<dataType> result)
     }
 }
 
-void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
-        Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
-        Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer)
+void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *inv_igp_index, int *indinv, dataType *wx_array, CustomComplex<dataType> *wtilde_array, \
+        CustomComplex<dataType> *aqsmtemp, CustomComplex<dataType> *aqsntemp, CustomComplex<dataType>*I_eps_array, dataType *vcoul, \
+        dataType *achtemp_re, dataType *achtemp_im, dataType &elapsedKernelTimer)
 {
     timeval startKernelTimer, endKernelTimer;
     gettimeofday(&startKernelTimer, NULL);
@@ -45,35 +57,35 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
     dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
 
-#pragma omp target enter data map(alloc:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+#pragma omp target enter data map(alloc:aqsmtemp[0:aqsmtemp_size], vcoul[0:vcoul_size], inv_igp_index[0:inv_igp_index_size], indinv[0:indinv_size], \
+    aqsntemp[0:aqsntemp_size], I_eps_array[0:I_eps_array_size], wx_array[0:wx_array_size], wtilde_array[0:wtilde_array_size])
 
-#pragma omp target update to(aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+#pragma omp target update to(aqsmtemp[0:aqsmtemp_size], vcoul[0:vcoul_size], inv_igp_index[0:inv_igp_index_size], indinv[0:indinv_size], \
+    aqsntemp[0:aqsntemp_size], I_eps_array[0:I_eps_array_size], wx_array[0:wx_array_size], wtilde_array[0:wtilde_array_size])
 
     gettimeofday(&startKernelTimer, NULL);
 #pragma omp target \
-    map(to:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size]) \
+    map(to:aqsmtemp[0:aqsmtemp_size], vcoul[0:vcoul_size], inv_igp_index[0:inv_igp_index_size], indinv[0:indinv_size], \
+    aqsntemp[0:aqsntemp_size], I_eps_array[0:I_eps_array_size], wx_array[0:wx_array_size], wtilde_array[0:wtilde_array_size]) \
     map(tofrom:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
 
 #pragma omp teams distribute parallel for collapse(2) \
     reduction(+:ach_re0, ach_re1, ach_re2, ach_im0, ach_im1, ach_im2)
-        for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
+    for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634
     {
-    for(int n1 = 0; n1<number_bands; ++n1) //512
+        for(int n1 = 0; n1<number_bands; ++n1) //512
         {
-            int indigp = inv_igp_index(my_igp);
-            int igp = indinv(indigp);
+            int indigp = inv_igp_index[my_igp];
+            int igp = indinv[indigp];
             dataType achtemp_re_loc[nend-nstart], achtemp_im_loc[nend-nstart];
             for(int iw = nstart; iw < nend; ++iw) {achtemp_re_loc[iw] = 0.00; achtemp_im_loc[iw] = 0.00;}
-            CustomComplex<dataType> sch_store1 = CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
+            CustomComplex<dataType> sch_store1 = CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul[igp];
 
             for(int ig = 0; ig<ncouls; ++ig) //32768
             {
                 for(int iw = nstart; iw < nend; ++iw) //3
                 {
-                    CustomComplex<dataType> wdiff = wx_array(iw) - wtilde_array(my_igp,ig);
+                    CustomComplex<dataType> wdiff = wx_array[iw] - wtilde_array(my_igp,ig);
                     CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
                     CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * sch_store1;
 
@@ -91,31 +103,31 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D
         } //ngpown
     } //number_bands
 
-    achtemp_re(0) = ach_re0;
-    achtemp_re(1) = ach_re1;
-    achtemp_re(2) = ach_re2;
-    achtemp_im(0) = ach_im0;
-    achtemp_im(1) = ach_im1;
-    achtemp_im(2) = ach_im2;
+    achtemp_re[0] = ach_re0;
+    achtemp_re[1] = ach_re1;
+    achtemp_re[2] = ach_re2;
+    achtemp_im[0] = ach_im0;
+    achtemp_im[1] = ach_im1;
+    achtemp_im[2] = ach_im2;
 
     gettimeofday(&endKernelTimer, NULL);
     elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
 
-#pragma omp target exit data map(delete:aqsmtemp.dptr[0:aqsmtemp.size], vcoul.dptr[0:vcoul.size], inv_igp_index.dptr[0:inv_igp_index.size], indinv.dptr[0:indinv.size], \
-    aqsntemp.dptr[0:aqsmtemp.size], I_eps_array.dptr[0:I_eps_array.size], wx_array.dptr[nstart:nend], wtilde_array.dptr[0:wtilde_array.size])
+#pragma omp target exit data map(delete:aqsmtemp[0:aqsmtemp_size], vcoul[0:vcoul_size], inv_igp_index[0:inv_igp_index_size], indinv[0:indinv_size], \
+    aqsntemp[0:aqsntemp_size], I_eps_array[0:I_eps_array_size], wx_array[0:wx_array_size], wtilde_array[0:wtilde_array_size])
 }
 
 int main(int argc, char** argv)
 {
 
-    cout << "\n ************OPENACC VERSION 1  **********\n" << endl;
+    cout << "\n ************ OpenMP Target version **********\n" << endl;
 
     int number_bands = 0, nvband = 0, ncouls = 0, nodes_per_group = 0;
     if(argc == 1)
     {
         number_bands = 512;
         nvband = 2;
-        ncouls = 32768;
+        ncouls = 512;
         nodes_per_group = 20;
     }
     else if(argc == 2)
@@ -183,90 +195,97 @@ int main(int argc, char** argv)
     size_t memFootPrint = 0.00;
 
     //ALLOCATE statements from fortran gppkernel.
-    Array1D<CustomComplex<dataType>> achtemp(nend-nstart);
-    memFootPrint += achtemp.getSizeInBytes();
+    CustomComplex<dataType> *achtemp;
+    achtemp = (CustomComplex<dataType>*) safe_malloc(achtemp_size*sizeof(CustomComplex<dataType>));
+    memFootPrint += achtemp_size*sizeof(CustomComplex<dataType>);
 
-    Array2D<CustomComplex<dataType>> aqsmtemp(number_bands, ncouls);
-    Array2D<CustomComplex<dataType>> aqsntemp(number_bands, ncouls);
-    memFootPrint += 2*aqsmtemp.getSizeInBytes();
+    CustomComplex<dataType> *aqsmtemp, *aqsntemp;
+    aqsmtemp = (CustomComplex<dataType>*) safe_malloc(aqsmtemp_size*sizeof(CustomComplex<dataType>));
+    aqsntemp = (CustomComplex<dataType>*) safe_malloc(aqsntemp_size*sizeof(CustomComplex<dataType>));
+    memFootPrint += 2*aqsmtemp_size*sizeof(CustomComplex<dataType>);
 
-    Array2D<CustomComplex<dataType>> I_eps_array(ngpown, ncouls);
-    Array2D<CustomComplex<dataType>> wtilde_array(ngpown, ncouls);
-    memFootPrint += 2*I_eps_array.getSizeInBytes();
+    CustomComplex<dataType> *I_eps_array, *wtilde_array;
+    I_eps_array = (CustomComplex<dataType>*) safe_malloc(I_eps_array_size*sizeof(CustomComplex<dataType>));
+    wtilde_array = (CustomComplex<dataType>*) safe_malloc(I_eps_array_size*sizeof(CustomComplex<dataType>));
+    memFootPrint += 2*I_eps_array_size*sizeof(CustomComplex<dataType>);
 
-    Array1D<dataType> vcoul(ncouls);
-    memFootPrint += vcoul.getSizeInBytes();;
+    dataType *vcoul;
+    vcoul = (dataType*) safe_malloc(vcoul_size*sizeof(dataType));
+    memFootPrint += vcoul_size*sizeof(dataType);
 
-    Array1D<int> inv_igp_index(ngpown);
-    Array1D<int> indinv(ncouls+1);
-    memFootPrint += inv_igp_index.getSizeInBytes();;
-    memFootPrint += indinv.getSizeInBytes();;
+    int *inv_igp_index, *indinv;
+    inv_igp_index = (int*) safe_malloc(inv_igp_index_size*sizeof(int));
+    indinv = (int*) safe_malloc(indinv_size*sizeof(int));
+
+    memFootPrint += inv_igp_index_size*sizeof(int);
+    memFootPrint += indinv_size*sizeof(int);
 
 //Real and imaginary parts of achtemp calculated separately to avoid critical.
-    Array1D<dataType> achtemp_re(nend-nstart);
-    Array1D<dataType> achtemp_im(nend-nstart);
-    Array1D<dataType> wx_array(nend-nstart);
-    memFootPrint += 3*wx_array.getSizeInBytes();
+    dataType *achtemp_re, *achtemp_im, *wx_array;
+    achtemp_re = (dataType*) safe_malloc(achtemp_re_size*sizeof(dataType));
+    achtemp_im = (dataType*) safe_malloc(achtemp_im_size*sizeof(dataType));
+    wx_array = (dataType*) safe_malloc(wx_array_size*sizeof(dataType));
+    memFootPrint += 3*wx_array_size*sizeof(double);
 
     //Print Memory Foot print
     cout << "Memory Foot Print = " << memFootPrint / pow(1024,3) << " GBs" << endl;
 
-   for(int i=0; i<number_bands; i++)
-       for(int j=0; j<ncouls; j++)
+   for(int n1=0; n1<number_bands; n1++)
+       for(int ig=0; ig<ncouls; ig++)
        {
-           aqsmtemp(i,j) = expr;
-           aqsntemp(i,j) = expr;
+           aqsmtemp(n1,ig) = expr;
+           aqsntemp(n1,ig) = expr;
        }
 
-   for(int i=0; i<ngpown; i++)
-       for(int j=0; j<ncouls; j++)
+   for(int my_igp=0; my_igp<ngpown; my_igp++)
+       for(int ig=0; ig<ncouls; ig++)
        {
-           I_eps_array(i,j) = expr;
-           wtilde_array(i,j) = expr;
+           I_eps_array(my_igp,ig) = expr;
+           wtilde_array(my_igp,ig) = expr;
        }
 
    for(int i=0; i<ncouls; i++)
-       vcoul(i) = i*0.025;
+       vcoul[i] = i*0.025;
 
 
     for(int ig=0; ig < ngpown; ++ig)
-        inv_igp_index(ig) = (ig+1) * ncouls / ngpown;
+        inv_igp_index[ig] = (ig+1) * ncouls / ngpown;
 
     for(int ig=0; ig<ncouls; ++ig)
-        indinv(ig) = ig;
-        indinv(ncouls) = ncouls-1;
+        indinv[ig] = ig;
+        indinv[ncouls] = ncouls-1;
 
        for(int iw=nstart; iw<nend; ++iw)
        {
-           achtemp_re(iw) = 0.00;
-           achtemp_im(iw) = 0.00;
+           achtemp_re[iw] = 0.00;
+           achtemp_im[iw] = 0.00;
        }
 
         for(int iw=nstart; iw<nend; ++iw)
         {
-            wx_array(iw) = e_lk - e_n1kq + dw*((iw+1)-2);
-            if(wx_array(iw) < to1) wx_array(iw) = to1;
+            wx_array[iw] = e_lk - e_n1kq + dw*((iw+1)-2);
+            if(wx_array[iw] < to1) wx_array[iw] = to1;
         }
 
     //The solver kernel
     noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
 
     for(int iw=nstart; iw<nend; ++iw)
-        achtemp(iw) = CustomComplex<dataType>(achtemp_re(iw), achtemp_im(iw));
+        achtemp[iw] = CustomComplex<dataType>(achtemp_re[iw], achtemp_im[iw]);
 
     //Check for correctness
     if(argc == 2)
     {
         if(strcmp(argv[1], "benchmark_problem") == 0)
-            correntess(0,achtemp(0));
+            correntess(0,achtemp[0]);
         else if(strcmp(argv[1], "test_problem") == 0)
-            correntess(1,achtemp(0));
+            correntess(1,achtemp[0]);
     }
     else
-        correntess(1,achtemp(0));
+        correntess(1,achtemp[0]);
 
     printf("\n Final achtemp\n");
-        achtemp(0).print();
+        achtemp[0].print();
 
     gettimeofday(&endTimer, NULL);
     elapsedTimer = (endTimer.tv_sec - startTimer.tv_sec) +1e-6*(endTimer.tv_usec - startTimer.tv_usec);
