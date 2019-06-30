@@ -1,18 +1,43 @@
-#include "../external/ComplexClass/CustomComplex.h"
-#include "../external/arrayMD/arrayMDcpu.h"
-#include <string.h>
+#include "ComplexClass/CustomComplex.h"
+#include "arrayMD/arrayMDcpu.h"
+#include <cstring>
+#include <sstream>
 
 #define nstart 0
 #define nend 3
 
-using dataType=double;
+extern "C" void
+gpp_init_library(const int loadSeq, const uint64_t interfaceVer,
+                 const uint32_t devInfoCount, void* deviceInfo);
 
-void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
-        Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
-        Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer);
+extern "C" void
+gpp_finalize_library();
+
+extern "C" void
+gpp_begin_record(const char* name, uint32_t devid, uint64_t* kernid);
+
+extern "C" void
+gpp_end_record(uint64_t kernid);
+
+#define CREATE_LABEL(prefix, idx)                                                        \
+    std::string(std::string(prefix) + "_" + std::to_string(idx)).c_str()
+
+using dataType = double;
+
+void
+noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
+                 Array1D<int>& inv_igp_index, Array1D<int>& indinv,
+                 Array1D<dataType>&                wx_array,
+                 Array2D<CustomComplex<dataType>>& wtilde_array,
+                 Array2D<CustomComplex<dataType>>& aqsmtemp,
+                 Array2D<CustomComplex<dataType>>& aqsntemp,
+                 Array2D<CustomComplex<dataType>>& I_eps_array, Array1D<dataType>& vcoul,
+                 Array1D<dataType>& achtemp_re, Array1D<dataType>& achtemp_im,
+                 dataType& elapsedKernelTimer);
 
 // Here we are checking to see if the answers are correct
-inline void correntess(int problem_size, CustomComplex<dataType> result)
+inline void
+correntess(int problem_size, CustomComplex<dataType> result)
 {
     if(problem_size == 0)
     {
@@ -36,218 +61,250 @@ inline void correntess(int problem_size, CustomComplex<dataType> result)
     }
 }
 
-void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, Array1D<int> &inv_igp_index, Array1D<int> &indinv, Array1D<dataType>& wx_array, Array2D<CustomComplex<dataType>>& wtilde_array, \
-        Array2D<CustomComplex<dataType>> &aqsmtemp, Array2D<CustomComplex<dataType>> &aqsntemp, Array2D<CustomComplex<dataType>> &I_eps_array, Array1D<dataType> &vcoul, \
-        Array1D<dataType> &achtemp_re, Array1D<dataType> &achtemp_im, dataType &elapsedKernelTimer)
+void
+noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
+                 Array1D<int>& inv_igp_index, Array1D<int>& indinv,
+                 Array1D<dataType>&                wx_array,
+                 Array2D<CustomComplex<dataType>>& wtilde_array,
+                 Array2D<CustomComplex<dataType>>& aqsmtemp,
+                 Array2D<CustomComplex<dataType>>& aqsntemp,
+                 Array2D<CustomComplex<dataType>>& I_eps_array, Array1D<dataType>& vcoul,
+                 Array1D<dataType>& achtemp_re, Array1D<dataType>& achtemp_im,
+                 dataType& elapsedKernelTimer)
 {
     timeval startKernelTimer, endKernelTimer;
     gettimeofday(&startKernelTimer, NULL);
+    std::stringstream label;
+    label << __FUNCTION__ << "_" << number_bands << "_" << ngpown;
+    uint64_t id = 0;
+    gpp_begin_record(label.str().c_str(), 0, &id);
 
-//***************************  THIS IS THE MAIN LOOP *************************************
-// Focus your optimization efforts here!!! You shouldn't need to change code anywhere else
-// Hints: try different loop ordering, think about data reduction
+    //*************************  THIS IS THE MAIN LOOP *********************************//
+    // Focus your optimization efforts here!!! You shouldn't need to change code anywhere
+    // else Hints: try different loop ordering, think about data reduction
 
     // hint: pragma
-    for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
+    for(int n1 = 0; n1 < number_bands; ++n1)  // 512 iterations
     {
         // hint: pragma
-        for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
+        for(int my_igp = 0; my_igp < ngpown; ++my_igp)  // 1634 iterations
         {
             int indigp = inv_igp_index(my_igp);
-            int igp = indinv(indigp);
+            int igp    = indinv(indigp);
 
             // hint: pragma
-            for(int ig = 0; ig<ncouls; ++ig) //32768 iterations - most of the compute effort is here!
+            for(int ig = 0; ig < ncouls; ++ig)
+            // 32768 iterations - most of the compute effort is here!
             {
                 // hint: pragma
-                for(int iw = nstart; iw < nend; ++iw) //3 iterations
+                for(int iw = nstart; iw < nend; ++iw)  // 3 iterations
                 {
-                    CustomComplex<dataType> wdiff = wx_array(iw) - wtilde_array(my_igp,ig);
-                    CustomComplex<dataType> delw = wtilde_array(my_igp, ig)* CustomComplex_conj(wdiff) * (1/CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
-                    CustomComplex<dataType> sch_array = delw  * I_eps_array(my_igp,ig) * CustomComplex_conj(aqsmtemp(n1,igp))*  aqsntemp(n1,igp) * 0.5 * vcoul(igp);
+                    CustomComplex<dataType> wdiff =
+                        wx_array(iw) - wtilde_array(my_igp, ig);
+                    CustomComplex<dataType> delw =
+                        wtilde_array(my_igp, ig) * CustomComplex_conj(wdiff) *
+                        (1 / CustomComplex_real((wdiff * CustomComplex_conj(wdiff))));
+                    CustomComplex<dataType> sch_array =
+                        delw * I_eps_array(my_igp, ig) *
+                        CustomComplex_conj(aqsmtemp(n1, igp)) * aqsntemp(n1, igp) * 0.5 *
+                        vcoul(igp);
 
                     // hint: is there a faster way to do this?
                     achtemp_re(iw) += CustomComplex_real(sch_array);
                     achtemp_im(iw) += CustomComplex_imag(sch_array);
                 }
             }
-        } //ngpown
-    } //number_bands
+        }  // ngpown
+    }      // number_bands
 
-    // ***************************** END OF MAIN LOOP *****************************************
+    //***************************** END OF MAIN LOOP ***********************************//
 
+    gpp_end_record(id);
     gettimeofday(&endKernelTimer, NULL);
-    elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +1e-6*(endKernelTimer.tv_usec - startKernelTimer.tv_usec);
+    elapsedKernelTimer = (endKernelTimer.tv_sec - startKernelTimer.tv_sec) +
+                         1e-6 * (endKernelTimer.tv_usec - startKernelTimer.tv_usec);
 }
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
+    gpp_init_library(0, 0, 0, nullptr);
+    uint64_t main_id = 0;
+    gpp_begin_record(argv[0], 0, &main_id);
 
     cout << "\n ************SEQUENTIAL VERSION  **********\n" << endl;
 
     int number_bands = 0, nvband = 0, ncouls = 0, nodes_per_group = 0;
     if(argc == 1)
     {
-        number_bands = 512;
-        nvband = 2;
-        ncouls = 512;
+        number_bands    = 512;
+        nvband          = 2;
+        ncouls          = 512;
         nodes_per_group = 20;
     }
     else if(argc == 2)
     {
         if(strcmp(argv[1], "benchmark_problem") == 0)
         {
-            number_bands = 512;
-            nvband = 2;
-            ncouls = 32768;
+            number_bands    = 512;
+            nvband          = 2;
+            ncouls          = 32768;
             nodes_per_group = 20;
         }
         else if(strcmp(argv[1], "test_problem") == 0)
         {
-            number_bands = 512;
-            nvband = 2;
-            ncouls = 512;
+            number_bands    = 512;
+            nvband          = 2;
+            ncouls          = 512;
             nodes_per_group = 20;
         }
         else
-            std::cout << "The problem sizes are either benchmark_problem or test_problem" << std::endl;
+            std::cout << "The problem sizes are either benchmark_problem or test_problem"
+                      << std::endl;
     }
-    else if (argc == 5)
+    else if(argc == 5)
     {
-        number_bands = atoi(argv[1]);
-        nvband = atoi(argv[2]);
-        ncouls = atoi(argv[3]);
+        number_bands    = atoi(argv[1]);
+        nvband          = atoi(argv[2]);
+        ncouls          = atoi(argv[3]);
         nodes_per_group = atoi(argv[4]);
     }
     else
     {
         std::cout << "The correct form of input is : " << endl;
-        std::cout << " ./a.out <number_bands> <number_valence_bands> <number_plane_waves> <nodes_per_mpi_group> " << endl;
-        exit (0);
+        std::cout << " ./a.out <number_bands> <number_valence_bands> "
+                     "<number_plane_waves> <nodes_per_mpi_group> "
+                  << endl;
+        exit(0);
     }
     int ngpown = ncouls / nodes_per_group;
 
-//Constants that will be used later
-    const dataType e_lk = 10;
-    const dataType dw = 1;
-    const dataType to1 = 1e-6;
-    const dataType gamma = 0.5;
-    const dataType sexcut = 4.0;
-    const dataType limitone = 1.0/(to1*4.0);
-    const dataType limittwo = pow(0.5,2);
-    const dataType e_n1kq= 6.0;
-    const dataType occ=1.0;
+    // Constants that will be used later
+    const dataType e_lk     = 10;
+    const dataType dw       = 1;
+    const dataType to1      = 1e-6;
+    const dataType gamma    = 0.5;
+    const dataType sexcut   = 4.0;
+    const dataType limitone = 1.0 / (to1 * 4.0);
+    const dataType limittwo = pow(0.5, 2);
+    const dataType e_n1kq   = 6.0;
+    const dataType occ      = 1.0;
 
-    //Start the timer before the work begins.
+    // Start the timer before the work begins.
     dataType elapsedKernelTimer, elapsedTimer;
-    timeval startTimer, endTimer;
+    timeval  startTimer, endTimer;
     gettimeofday(&startTimer, NULL);
 
-    //Printing out the params passed.
-    std::cout << "Sizeof(CustomComplex<dataType> = " << sizeof(CustomComplex<dataType>) << " bytes" << std::endl;
-    std::cout << "number_bands = " << number_bands \
-        << "\t nvband = " << nvband \
-        << "\t ncouls = " << ncouls \
-        << "\t nodes_per_group  = " << nodes_per_group \
-        << "\t ngpown = " << ngpown \
-        << "\t nend = " << nend \
-        << "\t nstart = " << nstart << endl;
+    // Printing out the params passed.
+    std::cout << "Sizeof(CustomComplex<dataType> = " << sizeof(CustomComplex<dataType>)
+              << " bytes" << std::endl;
+    std::cout << "number_bands = " << number_bands << "\t nvband = " << nvband
+              << "\t ncouls = " << ncouls << "\t nodes_per_group  = " << nodes_per_group
+              << "\t ngpown = " << ngpown << "\t nend = " << nend
+              << "\t nstart = " << nstart << endl;
 
     CustomComplex<dataType> expr0(0.00, 0.00);
     CustomComplex<dataType> expr(0.025, 0.025);
-    size_t memFootPrint = 0.00;
+    size_t                  memFootPrint = 0.00;
 
-    //ALLOCATE statements from fortran gppkernel.
-    Array1D<CustomComplex<dataType>> achtemp(nend-nstart);
+    // ALLOCATE statements from fortran gppkernel.
+    Array1D<CustomComplex<dataType>> achtemp(nend - nstart);
     memFootPrint += achtemp.getSizeInBytes();
 
     Array2D<CustomComplex<dataType>> aqsmtemp(number_bands, ncouls);
     Array2D<CustomComplex<dataType>> aqsntemp(number_bands, ncouls);
-    memFootPrint += 2*aqsmtemp.getSizeInBytes();
+    memFootPrint += 2 * aqsmtemp.getSizeInBytes();
 
     Array2D<CustomComplex<dataType>> I_eps_array(ngpown, ncouls);
     Array2D<CustomComplex<dataType>> wtilde_array(ngpown, ncouls);
-    memFootPrint += 2*I_eps_array.getSizeInBytes();
+    memFootPrint += 2 * I_eps_array.getSizeInBytes();
 
     Array1D<dataType> vcoul(ncouls);
-    memFootPrint += vcoul.getSizeInBytes();;
+    memFootPrint += vcoul.getSizeInBytes();
 
     Array1D<int> inv_igp_index(ngpown);
-    Array1D<int> indinv(ncouls+1);
-    memFootPrint += inv_igp_index.getSizeInBytes();;
-    memFootPrint += indinv.getSizeInBytes();;
+    Array1D<int> indinv(ncouls + 1);
+    memFootPrint += inv_igp_index.getSizeInBytes();
+    memFootPrint += indinv.getSizeInBytes();
 
-//Real and imaginary parts of achtemp calculated separately to avoid critical.
-    Array1D<dataType> achtemp_re(nend-nstart);
-    Array1D<dataType> achtemp_im(nend-nstart);
-    Array1D<dataType> wx_array(nend-nstart);
-    memFootPrint += 3*wx_array.getSizeInBytes();
+    // Real and imaginary parts of achtemp calculated separately to avoid critical.
+    Array1D<dataType> achtemp_re(nend - nstart);
+    Array1D<dataType> achtemp_im(nend - nstart);
+    Array1D<dataType> wx_array(nend - nstart);
+    memFootPrint += 3 * wx_array.getSizeInBytes();
 
-    //Print Memory Foot print
-    cout << "Memory Foot Print = " << memFootPrint / pow(1024,3) << " GBs" << endl;
+    // Print Memory Foot print
+    cout << "Memory Foot Print = " << memFootPrint / pow(1024, 3) << " GBs" << endl;
 
-   for(int i=0; i<number_bands; i++)
-       for(int j=0; j<ncouls; j++)
-       {
-           aqsmtemp(i,j) = expr;
-           aqsntemp(i,j) = expr;
-       }
-
-   for(int i=0; i<ngpown; i++)
-       for(int j=0; j<ncouls; j++)
-       {
-           I_eps_array(i,j) = expr;
-           wtilde_array(i,j) = expr;
-       }
-
-   for(int i=0; i<ncouls; i++)
-       vcoul(i) = i*0.025;
-
-
-    for(int ig=0; ig < ngpown; ++ig)
-        inv_igp_index(ig) = (ig+1) * ncouls / ngpown;
-
-    for(int ig=0; ig<ncouls; ++ig)
-        indinv(ig) = ig;
-        indinv(ncouls) = ncouls-1;
-
-       for(int iw=nstart; iw<nend; ++iw)
-       {
-           achtemp_re(iw) = 0.00;
-           achtemp_im(iw) = 0.00;
-       }
-
-        for(int iw=nstart; iw<nend; ++iw)
+    for(int i = 0; i < number_bands; i++)
+        for(int j = 0; j < ncouls; j++)
         {
-            wx_array(iw) = e_lk - e_n1kq + dw*((iw+1)-2);
-            if(wx_array(iw) < to1) wx_array(iw) = to1;
+            aqsmtemp(i, j) = expr;
+            aqsntemp(i, j) = expr;
         }
 
-    //The solver kernel -- this calls our MAIN LOOP (where you should focus your optimizations!)
-    noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array, wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re, achtemp_im, elapsedKernelTimer);
+    for(int i = 0; i < ngpown; i++)
+        for(int j = 0; j < ncouls; j++)
+        {
+            I_eps_array(i, j)  = expr;
+            wtilde_array(i, j) = expr;
+        }
 
-    for(int iw=nstart; iw<nend; ++iw)
+    for(int i = 0; i < ncouls; i++)
+        vcoul(i) = i * 0.025;
+
+    for(int ig = 0; ig < ngpown; ++ig)
+        inv_igp_index(ig) = (ig + 1) * ncouls / ngpown;
+
+    for(int ig = 0; ig < ncouls; ++ig)
+        indinv(ig) = ig;
+    indinv(ncouls) = ncouls - 1;
+
+    for(int iw = nstart; iw < nend; ++iw)
+    {
+        achtemp_re(iw) = 0.00;
+        achtemp_im(iw) = 0.00;
+    }
+
+    for(int iw = nstart; iw < nend; ++iw)
+    {
+        wx_array(iw) = e_lk - e_n1kq + dw * ((iw + 1) - 2);
+        if(wx_array(iw) < to1)
+            wx_array(iw) = to1;
+    }
+
+    // The solver kernel -- this calls our MAIN LOOP (where you should focus your
+    // optimizations!)
+    noflagOCC_solver(number_bands, ngpown, ncouls, inv_igp_index, indinv, wx_array,
+                     wtilde_array, aqsmtemp, aqsntemp, I_eps_array, vcoul, achtemp_re,
+                     achtemp_im, elapsedKernelTimer);
+
+    for(int iw = nstart; iw < nend; ++iw)
         achtemp(iw) = CustomComplex<dataType>(achtemp_re(iw), achtemp_im(iw));
 
-    //Check for correctness
+    // Check for correctness
     if(argc == 2)
     {
         if(strcmp(argv[1], "benchmark_problem") == 0)
-            correntess(0,achtemp(0));
+            correntess(0, achtemp(0));
         else if(strcmp(argv[1], "test_problem") == 0)
-            correntess(1,achtemp(0));
+            correntess(1, achtemp(0));
     }
     else
-        correntess(1,achtemp(0));
+        correntess(1, achtemp(0));
 
     printf("\n Final achtemp\n");
-        achtemp(0).print();
+    achtemp(0).print();
 
     gettimeofday(&endTimer, NULL);
-    elapsedTimer = (endTimer.tv_sec - startTimer.tv_sec) +1e-6*(endTimer.tv_usec - startTimer.tv_usec);
+    elapsedTimer = (endTimer.tv_sec - startTimer.tv_sec) +
+                   1e-6 * (endTimer.tv_usec - startTimer.tv_usec);
 
-    cout << "********** Kernel Time Taken **********= " << elapsedKernelTimer << " secs" << endl;
+    cout << "********** Kernel Time Taken **********= " << elapsedKernelTimer << " secs"
+         << endl;
     cout << "********** Total Time Taken **********= " << elapsedTimer << " secs" << endl;
 
+    gpp_end_record(main_id);
+    gpp_finalize_library();
     return 0;
 }

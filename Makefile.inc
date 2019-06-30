@@ -17,50 +17,59 @@ ifeq ($(findstring lang,$(COMP)),lang)
      FC=flang
      F77=flang
      COMP_CHOICE=clang
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring xl,$(COMP)),xl)
      CC=xlc_r
      CXX=xlC_r
      FC=xlf90_r
      F77=xlf_r
      COMP_CHOICE=xl
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring pg,$(COMP)),pg)
      CC=pgcc
      CXX=pgc++
      FC=pgf90
      F77=pgf77
      COMP_CHOICE=pgi
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring ic,$(COMP)),ic)
      CC=icc
      CXX=icpc
      FC=ifort
      F77=ifort
      COMP_CHOICE=intel
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring gc,$(COMP)),gc)
      CC=gcc
      CXX=g++
      FC=gfortran
      F77=gfortran
      COMP_CHOICE=gcc
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring gf,$(COMP)),gf)
      CC=gcc
      CXX=g++
      FC=gfortran
      F77=gfortran
      COMP_CHOICE=gcc
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring g+,$(COMP)),g+)
      CC=gcc
      CXX=g++
      FC=gfortran
      F77=gfortran
      COMP_CHOICE=gcc
+     LINKER_PREFIX=-Wl,
 else ifeq ($(findstring NVCC,$(COMP)),NVCC)
      CC=nvcc
      CXX=nvcc
      COMP_CHOICE=nvcc
+     LINKER_PREFIX=-Xlinker=
 else ifeq ($(findstring kokkos,$(COMP)),kokkos)
      CC=nvcc_wrapper
      CXX=nvcc_wrapper
      COMP_CHOICE=kokkos
+     LINKER_PREFIX=-Xlinker=
 else
      $(warning Warning COMP is not set)
 endif
@@ -338,3 +347,10 @@ else ifeq ($(COMP_CHOICE),gcc)
   CXXFLAGS += $(CFLAGS) -std=c++11
   FCFLAGS += $(CFLAGS)
 endif
+
+ifeq ($(DEBUG),y)
+  CXXFLAGS += -g
+  FCFLAGS += -g
+endif
+
+CXXFLAGS += $(USER_CXXFLAGS)
