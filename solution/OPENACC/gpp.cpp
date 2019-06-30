@@ -56,6 +56,8 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 
     dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, \
         ach_im0 = 0.00, ach_im1 = 0.00, ach_im2 = 0.00;
+    
+//***************************  THIS IS THE MAIN LOOP *************************************    
 
 #pragma acc parallel loop gang vector collapse(2) \
     present(inv_igp_index, indinv, aqsmtemp, aqsntemp, wtilde_array, wx_array, I_eps_array, vcoul)\
