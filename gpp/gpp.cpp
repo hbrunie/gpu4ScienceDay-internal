@@ -58,12 +58,13 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls, int *in
 // Focus your optimization efforts here!!! You shouldn't need to change code anywhere else
 
     // hint: parallel pragma
+    // hint: where are the data? target or device?
     // hint: data reduction
     
     for(int n1 = 0; n1<number_bands; ++n1) //512 iterations
     {
 
-        // hint: think about loop ordering
+        // hint: think about loop ordering/loop collapsing
         for(int my_igp=0; my_igp<ngpown; ++my_igp) //1634 iterations
         {
             int indigp = inv_igp_index[my_igp];
