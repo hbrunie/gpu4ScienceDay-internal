@@ -66,7 +66,7 @@ $ make COMP=openacc
 ```
 
 ### OpenMP:
-#### Info: For the Cori GPU Skylake CPU, set OMP_NUM_THREADS=40. (This will not affect the GPU.)
+#### Info: For the Cori GPU Skylake CPU, set OMP_NUM_THREADS=10. (This will not affect the GPU.)
 ```shell
 # setup
 $ module purge
