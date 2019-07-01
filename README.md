@@ -36,13 +36,14 @@ $ module load esslurm
 $ salloc -A gpu4sci -C gpu -N 1 -t 04:00:00 -c 10 --gres=gpu:1
 ```
 
-### Test CPU (sequential) version:
+### Build CPU (sequential) version:
 ```shell
 $ module purge
 $ module load intel esslurm
 
 # build
 $ make COMP=intel
+$ ./gpp.ex
 ```
 
 ### CUDA:
@@ -66,7 +67,6 @@ $ make COMP=openacc
 ```
 
 ### OpenMP:
-#### Info: For the Cori GPU Skylake CPU, set OMP_NUM_THREADS=40. (This will not affect the GPU.)
 ```shell
 # setup
 $ module purge
@@ -74,6 +74,7 @@ $ module load PrgEnv-llvm/9.0.0-git_20190220 esslurm
 
 # build
 $ make COMP=openmp
+$ export OMP_NUM_THREADS=10
 ```
 
 ### Kokkos:
@@ -86,14 +87,12 @@ $ module load kokkos cuda esslurm
 $ make COMP=kokkos
 ```
 
-### Run test problem (fast, good for debugging):
-#### Hint: Do NOT optimize the test problem, it runs so quickly it is not representative 
+### Run debug_application (fast, good for debugging):
 ```shell
-$ srun ./gpp.ex test_problem
+$ srun ./gpp.ex debug_application
 ```
 
-### Run benchmark problem (slow, this is how we will determine the hackathon winner):
-#### Hint: When you think you have introduced some speedups, test with this version (not the test_version)
+### Run real_application (slow, this is how we will determine the hackathon winner):
 ```shell
-$ srun ./gpp.ex benchmark_problem
+$ srun ./gpp.ex real_application
 ```

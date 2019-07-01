@@ -27,7 +27,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
                       dataType &elapsedKernelTimer);
 
 // Here we are checking to see if the answers are correct
-inline void correntess(int problem_size, CustomComplex<dataType> result) {
+inline void correctness(int problem_size, CustomComplex<dataType> result) {
   if (problem_size == 0) {
     dataType re_diff = result.get_real() - -24852.551547;
     dataType im_diff = result.get_imag() - 2957453.638101;
@@ -121,19 +121,19 @@ int main(int argc, char **argv) {
     ncouls = 512;
     nodes_per_group = 20;
   } else if (argc == 2) {
-    if (strcmp(argv[1], "benchmark_problem") == 0) {
+    if (strcmp(argv[1], "debug_application") == 0) {
       number_bands = 512;
       nvband = 2;
       ncouls = 32768;
       nodes_per_group = 20;
-    } else if (strcmp(argv[1], "test_problem") == 0) {
+    } else if (strcmp(argv[1], "real_application") == 0) {
       number_bands = 512;
       nvband = 2;
       ncouls = 512;
       nodes_per_group = 20;
     } else {
       std::cout
-          << "The problem sizes are either benchmark_problem or test_problem"
+          << "The problem sizes are either debug_application or real_application"
           << std::endl;
       exit(0);
     }
@@ -259,12 +259,12 @@ int main(int argc, char **argv) {
 
   // Check for correctness
   if (argc == 2) {
-    if (strcmp(argv[1], "benchmark_problem") == 0)
-      correntess(0, achtemp[0]);
-    else if (strcmp(argv[1], "test_problem") == 0)
-      correntess(1, achtemp[0]);
+    if (strcmp(argv[1], "debug_application") == 0)
+      correctness(0, achtemp[0]);
+    else if (strcmp(argv[1], "real_application") == 0)
+      correctness(1, achtemp[0]);
   } else
-    correntess(1, achtemp[0]);
+    correctness(1, achtemp[0]);
 
   printf("\n Final achtemp\n");
   achtemp[0].print();
