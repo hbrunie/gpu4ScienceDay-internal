@@ -40,11 +40,8 @@ ifeq ($(COMP_CHOICE),openmp)
 #
 else ifeq ($(COMP_CHOICE),openacc)
   CXXFLAGS += -fast -acc
-  tgtflags=tesla:fastmath
-  tgtflags:=$(tgtflags),managed
-  tgtflags:=$(tgtflags),cc70,cuda9.2
-  CXXFLAGS += -ta=$(tgtflags)
-  CXXFLAGS += -ta=multicore
+  CXXFLAGS += -ta=tesla:fastmath
+  CXXFLAGS += -ta:tesla:managed
   CXXFLAGS += -Minfo=accel
 
 #
