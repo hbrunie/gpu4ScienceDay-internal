@@ -66,6 +66,7 @@ $ make COMP=openacc
 ```
 
 ### OpenMP:
+## Info: For the Cori GPU Skylake CPU, set OMP_NUM_THREADS=40. (This will not affect the GPU.)
 ```shell
 # setup
 $ module purge
@@ -86,11 +87,13 @@ $ make COMP=kokkos
 ```
 
 ### Run test problem (fast, good for debugging):
+## Hint: Do NOT optimize the test problem, it runs so quickly it is not representative 
 ```shell
 $ srun ./gpp.ex test_problem
 ```
 
 ### Run benchmark problem (slow, this is how we will determine the hackathon winner):
+## Hint: When you think you have introduced some speedups, test with this version (not the test_version)
 ```shell
 $ srun ./gpp.ex benchmark_problem
 ```
