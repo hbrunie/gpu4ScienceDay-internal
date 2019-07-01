@@ -1,10 +1,11 @@
-#include "../../external/ComplexClass/CustomComplex.h"
-#include "../../external/commonDefines.h"
 #include <string.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <helper_cuda.h>
 #include <helper_timer.h>
+
+#include "CustomComplex.h"
+#include "commonDefines.h"
 
 #define nstart 0
 #define nend 3

@@ -38,7 +38,7 @@ $ module purge
 $ module load intel esslurm
 
 # build
-$ make COMP=ic
+$ make COMP=intel
 ```
 
 ### CUDA:
@@ -48,7 +48,7 @@ $ module purge
 $ module load cuda esslurm
 
 # build
-$ make COMP=NVCC
+$ make COMP=cuda
 ```
 
 ### OpenACC:
@@ -58,7 +58,7 @@ $ module purge
 $ module load pgi cuda esslurm
 
 # build
-$ make COMP=pgi OPENACC=y GPU=y
+$ make COMP=openacc
 ```
 
 ### OpenMP:
@@ -68,7 +68,7 @@ $ module purge
 $ module load PrgEnv-llvm/9.0.0-git_20190220 esslurm
 
 # build
-$ make COMP=clang OPENMP=y OPENMP_TARGET=y GPU=y
+$ make COMP=openmp
 ```
 
 ### Kokkos:

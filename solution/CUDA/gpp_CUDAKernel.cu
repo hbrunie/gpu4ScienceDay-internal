@@ -1,5 +1,5 @@
-#include "../../external/ComplexClass/CustomComplex.h"
-#include "../../external/commonDefines.h"
+#include "CustomComplex.h"
+#include "commonDefines.h"
 
 __global__ void noflagOCC_cudaSolver(int number_bands, int ngpown, int ncouls, int *inv_igp_index, int *indinv, \
         dataType *wx_array, CustomComplex<dataType> *wtilde_array, CustomComplex<dataType> *aqsmtemp, CustomComplex<dataType> *aqsntemp,\

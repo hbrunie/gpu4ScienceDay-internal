@@ -1,25 +1,28 @@
 include ../../Makefile.inc
 
+SRCS		= $(shell ls *.cpp)
+CUSRCS	= $(shell ls *.cu)
+OBJS		= $(SRCS:.cpp=.o)
+CUOBJS	= $(CUSRCS:.cu=.o)
+EXEC		= gpp.ex
 
-#gpp_obj = test_TeamsThreads.o
-gpp_obj = gpp.o
-gpp_cudaobj = gpp_CUDAKernel.o
-
-CXXFLAGS += -I$(CUDA_ROOT)/include
+PROJDIR	= $(shell pwd)/../..
+INCLS		= -I$(CUDA_ROOT)/include \
+					-I$(CUDA_ROOT)/samples/common/inc \
+					-I$(PROJDIR)/external \
+					-I$(PROJDIR)/external/ComplexClass \
+					-I$(PROJDIR)/external/arrayMD
 
 all: gpp
-EXEC=gpp
 
-gpp: $(gpp_obj) $(gpp_cudaobj)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(gpp_obj) $(gpp_cudaobj) -o $(EXEC).ex
+gpp: $(OBJS) $(CUOBJS)
+	$(CXX) $(INCLS) $(CXXFLAGS) $(OBJS) $(CUOBJS) -o $(EXEC)
 
 %.o: %.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) -c $(INCLS) $(CXXFLAGS) $< -o $@
 
 %.o: %.cu
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
-
-gpp.cpp: ../../external/ComplexClass/CustomComplex.h
+	$(CXX) -c $(INCLS) $(CXXFLAGS) $< -o $@
 
 clean:
-	rm -f *.o *.lst $(EXEC).ex *.ptx *.cub
+	rm -f *.o *.lst $(EXEC) *.ptx *.cub

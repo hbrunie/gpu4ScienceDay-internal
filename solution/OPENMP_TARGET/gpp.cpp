@@ -1,5 +1,5 @@
-#include "../../external/ComplexClass/CustomComplex.h"
-#include "../../external/commonDefines.h"
+#include "CustomComplex.h"
+#include "commonDefines.h"
 #include <string.h>
 
 #define nstart 0
