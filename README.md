@@ -4,17 +4,21 @@
 
 - `^/gpp`
   - `gpp.cpp`
-    - blabla...
-    - blabla...
+    - main function and the kernel to focus on
+  - `Makefile`
 - `^/external`
+  - `commonDefines.h`
   - `arrayMD/`
-    - an array...
+    - host-device data array
   - `ComplexClass/`
-    - a complex...
+    - custom complex number class
+- `^/solution-rookie`
+  - `openacc/`
+  - `openmp/`
 - `^/solution`
-  - `CUDA/`
-  - `OPENACC/`
-  - `OPENMP_TARGET/`
+  - `cuda/`
+  - `openacc/`
+  - `openmp/`
 
 ## Development Environment
 
