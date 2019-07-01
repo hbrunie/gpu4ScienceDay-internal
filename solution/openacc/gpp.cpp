@@ -65,8 +65,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
   dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, ach_im0 = 0.00,
            ach_im1 = 0.00, ach_im2 = 0.00;
 
-  //***************************  THIS IS THE MAIN LOOP
-  //*************************************
+  //***********************  THIS IS THE MAIN LOOP ***************************
 
 #pragma acc parallel loop gang vector collapse(2) \
     present(inv_igp_index, indinv, aqsmtemp, aqsntemp, wtilde_array, wx_array, I_eps_array, vcoul)\
@@ -86,8 +85,8 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
           CustomComplex_conj(aqsmtemp(n1, igp)) * aqsntemp(n1, igp) * 0.5 *
           vcoul[igp];
 
-      for (int ig = 0; ig < ncouls;
-           ++ig) // 32768 iterations - most of the compute effort is here!
+      // 32768 iterations - most of the compute effort is here!
+      for (int ig = 0; ig < ncouls; ++ig)
       {
         for (int iw = nstart; iw < nend; ++iw) // 3 iterations
         {
@@ -111,15 +110,13 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
       ach_im2 += achtemp_im_loc[2];
     } // ngpown
   }   // number_bands
+  //************************** END OF MAIN LOOP  *****************************
   achtemp_re[0] = ach_re0;
   achtemp_re[1] = ach_re1;
   achtemp_re[2] = ach_re2;
   achtemp_im[0] = ach_im0;
   achtemp_im[1] = ach_im1;
   achtemp_im[2] = ach_im2;
-
-  // ***************************** END OF MAIN LOOP
-  // *****************************************
 
   gettimeofday(&endKernelTimer, NULL);
   elapsedKernelTimer =

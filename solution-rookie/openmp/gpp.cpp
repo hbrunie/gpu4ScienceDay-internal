@@ -65,10 +65,9 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
   dataType ach_re0 = 0.00, ach_re1 = 0.00, ach_re2 = 0.00, ach_im0 = 0.00,
            ach_im1 = 0.00, ach_im2 = 0.00;
 
-  //***************************  THIS IS THE MAIN LOOP
-  //*************************************
-  // Focus your optimization efforts here!!! You shouldn't need to change code
-  // anywhere else
+  //***********************  THIS IS THE MAIN LOOP ***************************
+  // Focus your optimization efforts here.
+  // You shouldn't need to change code anywhere else
 
 #pragma omp target map(                                                        \
     to                                                                         \
@@ -97,8 +96,8 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
         achtemp_im_loc[iw] = 0.00;
       }
 
-      for (size_t ig = 0; ig < ncouls;
-           ++ig) // 32768 iterations - most of the compute effort is here!
+      // 32768 iterations - most of the compute effort is here!
+      for (size_t ig = 0; ig < ncouls; ++ig)
       {
         for (size_t iw = nstart; iw < nend; ++iw) // 3 iterations
         {
@@ -124,15 +123,13 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
       ach_im2 += achtemp_im_loc[2];
     } // ngpown
   }   // number_bands
+  //************************** END OF MAIN LOOP  *****************************
   achtemp_re[0] = ach_re0;
   achtemp_re[1] = ach_re1;
   achtemp_re[2] = ach_re2;
   achtemp_im[0] = ach_im0;
   achtemp_im[1] = ach_im1;
   achtemp_im[2] = ach_im2;
-
-  // ***************************** END OF MAIN LOOP
-  // *****************************************
 
   gettimeofday(&endKernelTimer, NULL);
   elapsedKernelTimer =

@@ -74,26 +74,21 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
   timeval startKernelTimer, endKernelTimer;
   gettimeofday(&startKernelTimer, NULL);
 
-  //***************************  THIS IS THE MAIN LOOP
-  //*************************************
-  // Focus your optimization efforts here!!! You shouldn't need to change code
-  // anywhere else Hints: try different loop ordering, think about data
-  // reduction
+  //***********************  THIS IS THE MAIN LOOP ***************************
+  // Focus your optimization efforts here.
+  // You shouldn't need to change code anywhere else
+  // Hints: try different loop ordering, think about data reduction
 
-  // hint: pragma
   for (int n1 = 0; n1 < number_bands; ++n1) // 512 iterations
   {
-    // hint: pragma
     for (int my_igp = 0; my_igp < ngpown; ++my_igp) // 1634 iterations
     {
       int indigp = inv_igp_index[my_igp];
       int igp = indinv[indigp];
 
-      // hint: pragma
-      for (int ig = 0; ig < ncouls;
-           ++ig) // 32768 iterations - most of the compute effort is here!
+      // 32768 iterations - most of the compute effort is here!
+      for (int ig = 0; ig < ncouls; ++ig)
       {
-        // hint: pragma
         for (int iw = nstart; iw < nend; ++iw) // 3 iterations
         {
           CustomComplex<dataType> wdiff =
@@ -113,9 +108,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
       }
     } // ngpown
   }   // number_bands
-
-  // ***************************** END OF MAIN LOOP
-  // *****************************************
+  //************************** END OF MAIN LOOP  *****************************
 
   gettimeofday(&endKernelTimer, NULL);
   elapsedKernelTimer =

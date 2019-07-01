@@ -79,8 +79,8 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
       int indigp = inv_igp_index[my_igp];
       int igp = indinv[indigp];
 
-      for (size_t ig = 0; ig < ncouls;
-           ++ig) // 32768 iterations - most of the compute effort is here!
+      // 32768 iterations - most of the compute effort is here!
+      for (size_t ig = 0; ig < ncouls; ++ig)
       {
 
         for (size_t iw = nstart; iw < nend; ++iw) // 3 iterations
@@ -102,8 +102,7 @@ void noflagOCC_solver(size_t number_bands, size_t ngpown, size_t ncouls,
       }
     } // ngpown
   }   // number_bands
-
-  //***********************  END OF MAIN LOOP ***************************
+  //************************** END OF MAIN LOOP  *****************************
 
   gettimeofday(&endKernelTimer, NULL);
   elapsedKernelTimer =
